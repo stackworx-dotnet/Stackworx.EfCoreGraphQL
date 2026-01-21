@@ -8,7 +8,7 @@ public record DataLoader
 {
     public required string LoaderName { get; init; }
 
-    public required Type EntityType { get; init; }
+    public required string EntityType { get; init; }
 
     public required Type KeyType { get; init; }
 
@@ -53,7 +53,7 @@ public record DataLoader
             KeyType = keyType,
             ReferenceField = keyPropName,
             IsShadowProperty = pkProp.IsShadowProperty(),
-            EntityType = entityType.ClrType,
+            EntityType = TypeUtils.GetNestedQualifiedName(entityType.ClrType),
             DbContextType = dbContext.GetType(),
             Notes = $"Primary Key Data Loader for <see cref=\"{TypeUtils.GetNestedQualifiedName(entityType.ClrType)}\"/>",
         };
@@ -99,7 +99,7 @@ public record DataLoader
             KeyType = keyType,
             ReferenceField = prop.Name,
             IsShadowProperty = prop.IsShadowProperty(),
-            EntityType = entityType.ClrType,
+            EntityType = TypeUtils.GetNestedQualifiedName(entityType.ClrType),
             DbContextType = dbContext.GetType(),
             Notes = $"Navigation Data Loader for <see cref=\"{TypeUtils.GetNestedQualifiedName(entityType.ClrType)}.{nav.Inverse?.Name}\"/>",
         };
@@ -139,7 +139,7 @@ public record DataLoader
                     sb.AppendLine($"        /*");
                 }
                 
-                sb.AppendLine($"        var items = await context.Set<{TypeUtils.CsDisplay(this.EntityType)}>()");
+                sb.AppendLine($"        var items = await context.Set<{this.EntityType}>()");
                 sb.AppendLine($"            .AsNoTracking()");
             
                 if (this.Nullable)
@@ -193,7 +193,7 @@ public record DataLoader
                 sb.AppendLine($"        CancellationToken ct)");
                 sb.AppendLine("    {");
                 
-                sb.AppendLine($"        return await context.Set<{TypeUtils.CsDisplay(this.EntityType)}>()");
+                sb.AppendLine($"        return await context.Set<{this.EntityType}>()");
                 sb.AppendLine($"            .AsNoTracking()");
 
                 if (this.Nullable)

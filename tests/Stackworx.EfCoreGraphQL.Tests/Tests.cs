@@ -19,7 +19,7 @@ public class Tests
             {
                 LoaderName = "UserById",
                 Nullable = false,
-                EntityType = typeof(User),
+                EntityType = typeof(User).ToString(),
                 Type = DataLoader.DataLoaderType.OneToOne,
                 KeyType = typeof(int),
                 ReferenceField = "Id",
@@ -62,7 +62,7 @@ public class Tests
             {
                 LoaderName = "UserProfileByUserId",
                 Nullable = false,
-                EntityType = typeof(UserProfile),
+                EntityType = typeof(UserProfile).ToString(),
                 Type = DataLoader.DataLoaderType.OneToOne,
                 KeyType = typeof(int),
                 ReferenceField = "UserId",
@@ -131,7 +131,7 @@ public class Tests
             config.Should().BeEquivalentTo(new DataLoader
             {
                 LoaderName = "UserById",
-                EntityType = typeof(User),
+                EntityType = typeof(User).ToString(),
                 Nullable = false,
                 Type = DataLoader.DataLoaderType.OneToOne,
                 KeyType = typeof(int),
@@ -199,7 +199,7 @@ public class Tests
             DataLoader.FromNavigation(db, nav).Should().BeEquivalentTo(new DataLoader
             {
                 LoaderName = "PassportByPersonId",
-                EntityType = typeof(Passport),
+                EntityType = typeof(Passport).ToString(),
                 Nullable = true,
                 Type = DataLoader.DataLoaderType.OneToOne,
                 KeyType = typeof(int),
@@ -253,7 +253,7 @@ public class Tests
             config.Should().BeEquivalentTo(new DataLoader
             {
                 LoaderName = "CommentsByPostId",
-                EntityType = typeof(Comment),
+                EntityType = typeof(Comment).ToString(),
                 Nullable = true,
                 Type = DataLoader.DataLoaderType.OneToMany,
                 KeyType = typeof(int),
@@ -454,7 +454,7 @@ public class Tests
             config.Should().BeEquivalentTo(new DataLoader
             {
                 LoaderName = "GetPostByComments",
-                EntityType = typeof(OrderItem),
+                EntityType = typeof(OrderItem).ToString(),
                 Nullable = false,
                 Type = DataLoader.DataLoaderType.OneToMany,
                 KeyType = typeof(int),
