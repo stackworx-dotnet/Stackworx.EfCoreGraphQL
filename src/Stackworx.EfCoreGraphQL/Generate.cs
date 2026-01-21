@@ -115,16 +115,73 @@ public static class DataLoaderGenerator
 
     private static int GetHotchocolateVersion()
     {
-        try
+        const int defaultMajor = 16;
+
+        static int? TryGetMajorFromAssemblyName(string assemblyName)
         {
-            var asm = Assembly.Load("HotChocolate");
-            var version = asm.GetName().Version;
-            return version?.Major ?? 16;
+            try
+            {
+                var asm = Assembly.Load(assemblyName);
+                return asm.GetName().Version?.Major;
+            }
+            catch
+            {
+                return null;
+            }
         }
-        catch
+
+        static int? TryGetMajorFromLoadedAssemblies(params string[] simpleNames)
         {
-            return 16;
+            try
+            {
+                foreach (var name in simpleNames)
+                {
+                    var match = AppDomain.CurrentDomain
+                        .GetAssemblies()
+                        .FirstOrDefault(a => string.Equals(a.GetName().Name, name, StringComparison.OrdinalIgnoreCase));
+
+                    var major = match?.GetName().Version?.Major;
+                    if (major is not null)
+                    {
+                        return major;
+                    }
+                }
+
+                return null;
+            }
+            catch
+            {
+                return null;
+            }
         }
+
+        // Probe a few well-known HotChocolate assemblies.
+        // We try loaded assemblies first to avoid Load() issues in some hosting scenarios.
+        var candidates = new[]
+        {
+            "HotChocolate",
+            "HotChocolate.Abstractions",
+            "HotChocolate.Types",
+            "HotChocolate.Execution",
+            "HotChocolate.Data"
+        };
+
+        var fromLoaded = TryGetMajorFromLoadedAssemblies(candidates);
+        if (fromLoaded is not null)
+        {
+            return fromLoaded.Value;
+        }
+
+        foreach (var candidate in candidates)
+        {
+            var major = TryGetMajorFromAssemblyName(candidate);
+            if (major is not null)
+            {
+                return major.Value;
+            }
+        }
+
+        return defaultMajor;
     }
 
     private static bool RunCommand(string fileName, string args)
