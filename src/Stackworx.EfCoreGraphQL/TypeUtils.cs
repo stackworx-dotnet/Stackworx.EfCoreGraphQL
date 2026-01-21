@@ -1,7 +1,6 @@
 namespace Stackworx.EfCoreGraphQL;
 
 using System.Diagnostics.CodeAnalysis;
-
 internal static class TypeUtils
 {
     public static string GetNestedQualifiedName(Type t)

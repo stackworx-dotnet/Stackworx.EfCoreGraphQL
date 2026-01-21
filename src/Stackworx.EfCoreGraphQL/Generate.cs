@@ -3,6 +3,7 @@ namespace Stackworx.EfCoreGraphQL;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
@@ -12,7 +13,7 @@ using Stackworx.EfCoreGraphQL.Shared;
 
 public static class DataLoaderGenerator
 {
-    public static async Task Generate(
+    public static Task Generate(
         DbContext dbContext,
         string outPath,
         Mode? mode = Mode.OptOut,
@@ -21,7 +22,31 @@ public static class DataLoaderGenerator
         Func<IEntityType, bool>? filter = null,
         string? ns = "Generated.DataLoaders",
         bool ci = false)
+        => Generate(
+            dbContext,
+            outPath,
+            new GenerateOptions
+            {
+                Mode = mode,
+                Filter = filter,
+                Namespace = ns ?? "Generated.DataLoaders",
+                CI = ci
+            });
+
+    public static async Task Generate(
+        DbContext dbContext,
+        string outPath,
+        GenerateOptions? options)
     {
+        options ??= new GenerateOptions();
+
+        var version = GetHotchocolateVersion();
+
+        var mode = options.Mode;
+        var filter = options.Filter;
+        var ns = options.Namespace;
+        var ci = options.CI;
+
         var model = dbContext.Model;
 
         var sb = new StringBuilder();
@@ -63,10 +88,10 @@ public static class DataLoaderGenerator
             {
                 continue;
             }
-            
-            Generate(dbContext, entity, sb);
+
+            Generate(dbContext, entity, sb, version);
         }
-        
+
         await File.WriteAllTextAsync(outPath, sb.ToString());
 
         if (ci)
@@ -85,6 +110,20 @@ public static class DataLoaderGenerator
             Console.ForegroundColor = ConsoleColor.Green;
             Console.WriteLine("✅ No changes detected. Generated files are up to date.");
             Console.ResetColor();
+        }
+    }
+
+    private static int GetHotchocolateVersion()
+    {
+        try
+        {
+            var asm = Assembly.Load("HotChocolate");
+            var version = asm.GetName().Version;
+            return version?.Major ?? 16;
+        }
+        catch
+        {
+            return 16;
         }
     }
 
@@ -108,7 +147,7 @@ public static class DataLoaderGenerator
         return process.ExitCode == 0;
     }
 
-    private static void Generate(DbContext dbContext, IEntityType entity, StringBuilder sb)
+    private static void Generate(DbContext dbContext, IEntityType entity, StringBuilder sb, int version)
     {
         // Skip join tables
         var pk = entity.FindPrimaryKey();
@@ -131,7 +170,7 @@ public static class DataLoaderGenerator
         {
             var dataLoader = DataLoader.FromEntity(dbContext, entity);
             sb.Append(dataLoader.EmitComment());
-            sb.AppendLine(dataLoader.Emit());
+            sb.AppendLine(dataLoader.Emit(version));
         }
 
         foreach (var navigation in entity.GetNavigations()
@@ -154,7 +193,7 @@ public static class DataLoaderGenerator
             {
                 var dataLoader = DataLoader.FromNavigation(dbContext, navigation);
                 sb.Append(dataLoader.EmitComment());
-                sb.AppendLine(dataLoader.Emit());
+                sb.AppendLine(dataLoader.Emit(version));
             }
 
             var field = FieldExtension.FromNavigation(dbContext, navigation);

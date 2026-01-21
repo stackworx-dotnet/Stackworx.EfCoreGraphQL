@@ -5,6 +5,8 @@ using Stackworx.EfCoreGraphQL.Tests.Data;
 
 public class Tests
 {
+    private static readonly int Version = 15;
+    
     [Fact]
     public async Task TestPrimaryDataLoader()
     {
@@ -26,7 +28,7 @@ public class Tests
                 Notes = "Primary Key Data Loader for <see cref=\"Stackworx.EfCoreGraphQL.Tests.Data.User\"/>",
             });
 
-            config.Emit().Should().MatchSource(
+            config.Emit(Version).Should().MatchSource(
                 """
                         [DataLoader]
                         public static async Task<IDictionary<int, Stackworx.EfCoreGraphQL.Tests.Data.User>> UserById(
@@ -69,7 +71,7 @@ public class Tests
                 Notes = "Navigation Data Loader for <see cref=\"Stackworx.EfCoreGraphQL.Tests.Data.UserProfile.User\"/>",
             });
             
-            dataLoaderConfig.Emit().Should().MatchSource(
+            dataLoaderConfig.Emit(Version).Should().MatchSource(
                 """
                         [DataLoader]
                         public static async Task<IDictionary<int, Stackworx.EfCoreGraphQL.Tests.Data.UserProfile>> UserProfileByUserId(
@@ -139,7 +141,7 @@ public class Tests
                 Notes = "Navigation Data Loader for <see cref=\"Stackworx.EfCoreGraphQL.Tests.Data.User.Profile\"/>",
             });
             
-            config.Emit().Should().MatchSource(
+            config.Emit(Version).Should().MatchSource(
                 """
                         [DataLoader]
                         public static async Task<IDictionary<int, Stackworx.EfCoreGraphQL.Tests.Data.User>> UserById(
@@ -261,7 +263,7 @@ public class Tests
                 Notes = "Navigation Data Loader for <see cref=\"Stackworx.EfCoreGraphQL.Tests.Data.Comment.Post\"/>",
             });
 
-            config.Emit().Should().MatchSource(
+            config.Emit(Version).Should().MatchSource(
                 """
                         [DataLoader]
                         public static async Task<ILookup<int, Stackworx.EfCoreGraphQL.Tests.Data.Comment>> CommentsByPostId(

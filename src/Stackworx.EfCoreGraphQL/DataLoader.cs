@@ -114,7 +114,7 @@ public record DataLoader
         return sb.ToString();
     }
 
-    public string Emit()
+    public string Emit(int version)
     {
         var sb = new StringBuilder();
         var keyType = TypeUtils.GetNestedQualifiedName(this.KeyType);
@@ -178,7 +178,16 @@ public record DataLoader
             // One to One
             default:
             {
-                sb.AppendLine($"    public static async Task<IDictionary<{keyType}, {this.EntityType}>> {this.LoaderName}(");
+                // HotChocolate 13 only works with Dictionary not IDictionary
+                if (version <= 13) {
+                    sb.AppendLine(
+                        $"    public static async Task<Dictionary<{keyType}, {this.EntityType}>> {this.LoaderName}(");
+                } else
+                {
+                    sb.AppendLine(
+                        $"    public static async Task<IDictionary<{keyType}, {this.EntityType}>> {this.LoaderName}(");
+                }
+
                 sb.AppendLine($"        IReadOnlyList<{keyType}> keys,");
                 sb.AppendLine($"        {TypeUtils.CsDisplay(this.DbContextType)} context,");
                 sb.AppendLine($"        CancellationToken ct)");
