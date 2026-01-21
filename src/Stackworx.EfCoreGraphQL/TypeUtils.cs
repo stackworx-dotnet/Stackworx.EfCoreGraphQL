@@ -1,6 +1,9 @@
 namespace Stackworx.EfCoreGraphQL;
 
 using System.Diagnostics.CodeAnalysis;
+using System.Collections.Generic;
+using System.Linq;
+
 internal static class TypeUtils
 {
     public static string GetNestedQualifiedName(Type t)
@@ -92,7 +95,14 @@ internal static class TypeUtils
         // 2️⃣ Handle generic IEnumerable<T> / ICollection<T> / IList<T> / HashSet<T> etc.
         if (clrType.IsGenericType)
         {
-            // Look for any implemented interface that is IEnumerable<T>
+            // If the type itself is IEnumerable<T> (or similar), unwrap directly.
+            if (clrType.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+            {
+                elementType = clrType.GetGenericArguments()[0];
+                return true;
+            }
+
+            // Otherwise, look for any implemented interface that is IEnumerable<T>
             var enumerableIface = clrType
                 .GetInterfaces()
                 .FirstOrDefault(i =>

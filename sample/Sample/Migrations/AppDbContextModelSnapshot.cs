@@ -14,7 +14,7 @@ namespace Sample.Migrations
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
 
             modelBuilder.Entity("PostTag", b =>
                 {
@@ -29,6 +29,21 @@ namespace Sample.Migrations
                     b.HasIndex("TagId");
 
                     b.ToTable("PostTags", (string)null);
+                });
+
+            modelBuilder.Entity("PostTag1", b =>
+                {
+                    b.Property<int>("PostsShadowId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TagsShadowId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("PostsShadowId", "TagsShadowId");
+
+                    b.HasIndex("TagsShadowId");
+
+                    b.ToTable("PostTag1");
                 });
 
             modelBuilder.Entity("Stackworx.EfCoreGraphQL.Tests.Data.Author", b =>
@@ -286,6 +301,21 @@ namespace Sample.Migrations
                     b.HasOne("Stackworx.EfCoreGraphQL.Tests.Data.Tag", null)
                         .WithMany()
                         .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PostTag1", b =>
+                {
+                    b.HasOne("Stackworx.EfCoreGraphQL.Tests.Data.Post", null)
+                        .WithMany()
+                        .HasForeignKey("PostsShadowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Stackworx.EfCoreGraphQL.Tests.Data.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsShadowId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

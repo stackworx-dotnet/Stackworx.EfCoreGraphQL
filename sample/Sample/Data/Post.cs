@@ -6,5 +6,8 @@ public class Post
     public required string Title { get; set; }
 
     public List<Tag> Tags { get; set; } = new();
+
+    public List<Tag> TagsShadow { get; set; } = new();
+    
     public List<Comment> Comments { get; set; } = new();
 }

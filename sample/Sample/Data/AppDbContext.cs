@@ -152,6 +152,10 @@ public class AppDbContext : DbContext
                         j.HasKey("PostId", "TagId");
                         j.ToTable("PostTags");
                     });
+
+            // Shadow many to many
+            b.HasMany(x => x.TagsShadow)
+                .WithMany("PostsShadow");
         });
 
         model.Entity<Tag>(b =>

@@ -209,6 +209,40 @@ public static class DataLoaderGenerator
             {
                 continue;
             }
+
+            // We can only generate a correct many-to-many data loader when the skip navigation has a CLR-backed inverse
+            // (either a property or a field). Without an inverse member, EF can still model the relationship, but we
+            // can't reliably:
+            //  - project the "parent" key from the join, and
+            //  - select/shape the "child" collection for lookup,
+            // because our emission code uses the inverse member name to build the SelectMany() expression.
+            //
+            // Example:
+            //   class Post { public int Id { get; set; } public ICollection<Tag> Tags { get; set; } }
+            //   class Tag  { public int Id { get; set; } public ICollection<Post> Posts { get; set; } }
+            //
+            // The generated loader needs the inverse navigation (Tag.Posts) to map parent ids to children:
+            //   [DataLoader]
+            //   public static async Task<ILookup<int, Tag>> TagsByPosts(
+            //       IReadOnlyList<int> keys,
+            //       AppDbContext context,
+            //       CancellationToken ct)
+            //   {
+            //       var pairs = await context.Set<Tag>()
+            //           .Where(t => t.Posts.Any(p => keys.Contains(p.Id)))
+            //           .SelectMany(tag => tag.Posts.Select(post => new { post.Id, Child = tag }))
+            //           .AsNoTracking()
+            //           .ToListAsync(ct);
+            //
+            //       return pairs.ToLookup(e => e.Id, x => x.Child);
+            //   }
+            //
+            // If the inverse doesn't exist, we skip emitting this loader/field extension to avoid generating code that
+            // won't compile or will behave incorrectly.
+            if (navigation.Inverse.FieldInfo is null && navigation.Inverse.PropertyInfo is null)
+            {
+                continue;
+            }
             
             // Skip dependant navigations
             if (!navigation.IsOnDependent)

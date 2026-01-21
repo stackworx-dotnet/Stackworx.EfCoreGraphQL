@@ -430,6 +430,29 @@ public static class TagExtensions
         return await loader.LoadAsync(parent.Id, ct);
     }
 
+    [DataLoader]
+    public static async Task<ILookup<int, Stackworx.EfCoreGraphQL.Tests.Data.Post>> PostsShadowByTagsShadow(
+        IReadOnlyList<int> keys,
+        Stackworx.EfCoreGraphQL.Tests.Data.AppDbContext context,
+        CancellationToken ct)
+    {
+        var pairs = await context.Set<Stackworx.EfCoreGraphQL.Tests.Data.Post>()
+            .Where(e => e.TagsShadow.Any(p => keys.Contains(p.Id)))
+            .SelectMany(child => child.TagsShadow.Select(parent => new { parent.Id, Child = child }))
+            .AsNoTracking()
+            .ToListAsync(ct);
+
+        return pairs.ToLookup(e => e.Id, x => x.Child);
+    }
+
+    public static async Task<Stackworx.EfCoreGraphQL.Tests.Data.Post[]> GetPostsShadowAsync(
+        [Parent] Stackworx.EfCoreGraphQL.Tests.Data.Tag parent,
+        IPostsShadowByTagsShadowDataLoader loader,
+        CancellationToken ct)
+    {
+        return await loader.LoadAsync(parent.Id, ct);
+    }
+
 }
 
 // User

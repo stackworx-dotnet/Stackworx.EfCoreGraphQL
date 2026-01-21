@@ -221,6 +221,30 @@ namespace Sample.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "PostTag1",
+                columns: table => new
+                {
+                    PostsShadowId = table.Column<int>(type: "INTEGER", nullable: false),
+                    TagsShadowId = table.Column<int>(type: "INTEGER", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PostTag1", x => new { x.PostsShadowId, x.TagsShadowId });
+                    table.ForeignKey(
+                        name: "FK_PostTag1_Posts_PostsShadowId",
+                        column: x => x.PostsShadowId,
+                        principalTable: "Posts",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_PostTag1_Tags_TagsShadowId",
+                        column: x => x.TagsShadowId,
+                        principalTable: "Tags",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "PostTags",
                 columns: table => new
                 {
@@ -286,6 +310,11 @@ namespace Sample.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_PostTag1_TagsShadowId",
+                table: "PostTag1",
+                column: "TagsShadowId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_PostTags_TagId",
                 table: "PostTags",
                 column: "TagId");
@@ -314,6 +343,9 @@ namespace Sample.Migrations
 
             migrationBuilder.DropTable(
                 name: "Passports");
+
+            migrationBuilder.DropTable(
+                name: "PostTag1");
 
             migrationBuilder.DropTable(
                 name: "PostTags");

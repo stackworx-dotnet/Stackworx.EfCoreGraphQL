@@ -10,14 +10,14 @@ using Stackworx.EfCoreGraphQL.Tests.Data;
 namespace Sample.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20251107194617_Initial")]
+    [Migration("20260121191325_Initial")]
     partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "9.0.10");
+            modelBuilder.HasAnnotation("ProductVersion", "10.0.2");
 
             modelBuilder.Entity("PostTag", b =>
                 {
@@ -32,6 +32,21 @@ namespace Sample.Migrations
                     b.HasIndex("TagId");
 
                     b.ToTable("PostTags", (string)null);
+                });
+
+            modelBuilder.Entity("PostTag1", b =>
+                {
+                    b.Property<int>("PostsShadowId")
+                        .HasColumnType("INTEGER");
+
+                    b.Property<int>("TagsShadowId")
+                        .HasColumnType("INTEGER");
+
+                    b.HasKey("PostsShadowId", "TagsShadowId");
+
+                    b.HasIndex("TagsShadowId");
+
+                    b.ToTable("PostTag1");
                 });
 
             modelBuilder.Entity("Stackworx.EfCoreGraphQL.Tests.Data.Author", b =>
@@ -289,6 +304,21 @@ namespace Sample.Migrations
                     b.HasOne("Stackworx.EfCoreGraphQL.Tests.Data.Tag", null)
                         .WithMany()
                         .HasForeignKey("TagId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PostTag1", b =>
+                {
+                    b.HasOne("Stackworx.EfCoreGraphQL.Tests.Data.Post", null)
+                        .WithMany()
+                        .HasForeignKey("PostsShadowId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Stackworx.EfCoreGraphQL.Tests.Data.Tag", null)
+                        .WithMany()
+                        .HasForeignKey("TagsShadowId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });
