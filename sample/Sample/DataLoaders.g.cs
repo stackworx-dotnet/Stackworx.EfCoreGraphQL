@@ -314,6 +314,9 @@ public static class PostExtensions
         return await loader.LoadAsync(parent.Id, ct);
     }
 
+    /// <summary>
+    /// Skip Navigation Data Loader for <see cref="Stackworx.EfCoreGraphQL.Tests.Data.Tag.Posts"/>
+    /// </summary>
     [DataLoader]
     public static async Task<ILookup<int, Stackworx.EfCoreGraphQL.Tests.Data.Tag>> TagsByPosts(
         IReadOnlyList<int> keys,
@@ -329,6 +332,9 @@ public static class PostExtensions
         return pairs.ToLookup(e => e.Id, x => x.Child);
     }
 
+    /// <summary>
+    /// GraphQL Field Override for <see cref="Stackworx.EfCoreGraphQL.Tests.Data.Post.Tags"/>
+    /// </summary>
     public static async Task<Stackworx.EfCoreGraphQL.Tests.Data.Tag[]> GetTagsAsync(
         [Parent] Stackworx.EfCoreGraphQL.Tests.Data.Post parent,
         ITagsByPostsDataLoader loader,
@@ -407,6 +413,9 @@ public static class TagExtensions
             .ToDictionaryAsync(e => e.Id, ct);
     }
 
+    /// <summary>
+    /// Skip Navigation Data Loader for <see cref="Stackworx.EfCoreGraphQL.Tests.Data.Post.Tags"/>
+    /// </summary>
     [DataLoader]
     public static async Task<ILookup<int, Stackworx.EfCoreGraphQL.Tests.Data.Post>> PostsByTags(
         IReadOnlyList<int> keys,
@@ -422,6 +431,9 @@ public static class TagExtensions
         return pairs.ToLookup(e => e.Id, x => x.Child);
     }
 
+    /// <summary>
+    /// GraphQL Field Override for <see cref="Stackworx.EfCoreGraphQL.Tests.Data.Tag.Posts"/>
+    /// </summary>
     public static async Task<Stackworx.EfCoreGraphQL.Tests.Data.Post[]> GetPostsAsync(
         [Parent] Stackworx.EfCoreGraphQL.Tests.Data.Tag parent,
         IPostsByTagsDataLoader loader,
@@ -430,6 +442,9 @@ public static class TagExtensions
         return await loader.LoadAsync(parent.Id, ct);
     }
 
+    /// <summary>
+    /// Skip Navigation Data Loader for <see cref="Stackworx.EfCoreGraphQL.Tests.Data.Post.TagsShadow"/>
+    /// </summary>
     [DataLoader]
     public static async Task<ILookup<int, Stackworx.EfCoreGraphQL.Tests.Data.Post>> PostsShadowByTagsShadow(
         IReadOnlyList<int> keys,
@@ -445,6 +460,9 @@ public static class TagExtensions
         return pairs.ToLookup(e => e.Id, x => x.Child);
     }
 
+    /// <summary>
+    /// GraphQL Field Override for <see cref="Stackworx.EfCoreGraphQL.Tests.Data.Tag.PostsShadow"/>
+    /// </summary>
     public static async Task<Stackworx.EfCoreGraphQL.Tests.Data.Post[]> GetPostsShadowAsync(
         [Parent] Stackworx.EfCoreGraphQL.Tests.Data.Tag parent,
         IPostsShadowByTagsShadowDataLoader loader,

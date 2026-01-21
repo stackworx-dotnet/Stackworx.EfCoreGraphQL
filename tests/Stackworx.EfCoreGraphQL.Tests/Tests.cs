@@ -334,10 +334,15 @@ public class Tests
                 ParentKeyType = typeof(int),
                 ParentType = typeof(Post),
                 DbContextType = typeof(AppDbContext),
+                FieldNotes = "GraphQL Field Override for <see cref=\"Stackworx.EfCoreGraphQL.Tests.Data.Post.Tags\"/>",
+                LoaderNotes = "Skip Navigation Data Loader for <see cref=\"Stackworx.EfCoreGraphQL.Tests.Data.Tag.Posts\"/>",
             });
 
             manyToMany.EmitDataLoader().Should().MatchSource(
                 """
+                        /// <summary>
+                        /// Skip Navigation Data Loader for <see cref="Stackworx.EfCoreGraphQL.Tests.Data.Tag.Posts"/>
+                        /// </summary>
                         [DataLoader]
                         public static async Task<ILookup<int, Stackworx.EfCoreGraphQL.Tests.Data.Tag>> TagsByPosts(
                             IReadOnlyList<int> keys,
@@ -356,6 +361,9 @@ public class Tests
 
             manyToMany.EmitFieldExtension().Should().MatchSource(
                 """
+                    /// <summary>
+                    /// GraphQL Field Override for <see cref="Stackworx.EfCoreGraphQL.Tests.Data.Post.Tags"/>
+                    /// </summary>
                     public static async Task<Stackworx.EfCoreGraphQL.Tests.Data.Tag[]> GetTagsAsync(
                         [Parent] Stackworx.EfCoreGraphQL.Tests.Data.Post parent,
                         ITagsByPostsDataLoader loader,
@@ -378,7 +386,7 @@ public class Tests
             nav.IsOnDependent.Should().BeFalse();
             nav.IsCollection.Should().BeTrue();
 
-                        ManyToMany.FromNavigation(db, nav);
+            ManyToMany.FromNavigation(db, nav);
             var manyToMany = ManyToMany.FromNavigation(db, nav);
             manyToMany.Should().BeEquivalentTo(new ManyToMany
             {
@@ -392,10 +400,15 @@ public class Tests
                 ParentKeyType = typeof(int),
                 ParentType = typeof(Tag),
                 DbContextType = typeof(AppDbContext),
+                FieldNotes = "GraphQL Field Override for <see cref=\"Stackworx.EfCoreGraphQL.Tests.Data.Tag.Posts\"/>",
+                LoaderNotes = "Skip Navigation Data Loader for <see cref=\"Stackworx.EfCoreGraphQL.Tests.Data.Post.Tags\"/>",
             });
 
             manyToMany.EmitDataLoader().Should().MatchSource(
                 """
+                        /// <summary>
+                        /// Skip Navigation Data Loader for <see cref="Stackworx.EfCoreGraphQL.Tests.Data.Post.Tags"/>
+                        /// </summary>
                         [DataLoader]
                         public static async Task<ILookup<int, Stackworx.EfCoreGraphQL.Tests.Data.Post>> PostsByTags(
                             IReadOnlyList<int> keys,
@@ -414,6 +427,9 @@ public class Tests
 
             manyToMany.EmitFieldExtension().Should().MatchSource(
                 """
+                    /// <summary>
+                    /// GraphQL Field Override for <see cref="Stackworx.EfCoreGraphQL.Tests.Data.Tag.Posts"/>
+                    /// </summary>
                     public static async Task<Stackworx.EfCoreGraphQL.Tests.Data.Post[]> GetPostsAsync(
                         [Parent] Stackworx.EfCoreGraphQL.Tests.Data.Tag parent,
                         IPostsByTagsDataLoader loader,

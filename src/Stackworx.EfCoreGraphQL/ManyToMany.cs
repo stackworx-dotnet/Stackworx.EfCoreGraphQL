@@ -25,6 +25,10 @@ public record ManyToMany
     public required Type ChildKeyType { get; init; }
     
     public required string LoaderName { get; init; }
+
+    public string? LoaderNotes { get; set; }
+    
+    public string? FieldNotes { get; set; }
     
     public static ManyToMany FromNavigation(DbContext dbContext, ISkipNavigation nav)
     {
@@ -35,7 +39,14 @@ public record ManyToMany
         ArgumentNullException.ThrowIfNull(parentType);
         TypeUtils.TryUnwrapCollectionType(inverse.ClrType, out var childType);
         ArgumentNullException.ThrowIfNull(childType);
-        
+
+        // TODO: handle case where property not defined (shadow)
+        var fieldNotes =
+            $"GraphQL Field Override for <see cref=\"{TypeUtils.GetNestedQualifiedName(nav.DeclaringEntityType.ClrType)}.{nav.Name}\"/>";
+
+        var loaderNotes =
+            $"Skip Navigation Data Loader for <see cref=\"{TypeUtils.GetNestedQualifiedName(parentType)}.{nav.Inverse.Name}\"/>";
+
         return new ManyToMany
         {
             LoaderName = LoaderNames.GroupLoaderName(nav),
@@ -48,6 +59,8 @@ public record ManyToMany
             ParentKeyName = inverse.ForeignKey.PrincipalKey.Properties.Single().Name,
             ParentKeyType = inverse.ForeignKey.PrincipalKey.Properties.Single().ClrType,
             ParentType = childType,
+            FieldNotes = fieldNotes,
+            LoaderNotes = loaderNotes,
         };
     }
 
@@ -58,6 +71,9 @@ public record ManyToMany
         var childKeyType = TypeUtils.GetNestedQualifiedName(this.ChildKeyType);
         var childType = TypeUtils.GetNestedQualifiedName(this.ChildType);
         
+        sb.AppendLine($"    /// <summary>");
+        sb.AppendLine($"    /// {this.LoaderNotes}");
+        sb.AppendLine($"    /// </summary>");
         sb.AppendLine($"    [DataLoader]");
         
         sb.AppendLine(
@@ -89,6 +105,9 @@ public record ManyToMany
 
         // sb.AppendLine($"    // {this.Notes}");
 
+        sb.AppendLine($"    /// <summary>");
+        sb.AppendLine($"    /// {this.FieldNotes}");
+        sb.AppendLine($"    /// </summary>");
         sb.AppendLine(
             $"    public static async Task<{childType}[]> Get{this.ChildPropertyName}Async(");
         sb.AppendLine($"        [Parent] {parentType} parent,");
