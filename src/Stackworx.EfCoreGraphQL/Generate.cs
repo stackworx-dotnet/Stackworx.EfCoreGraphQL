@@ -171,9 +171,6 @@ public static class DataLoaderGenerator
                 continue;
             }
 
-            // Design-time generation doesn't have a DbContext instance.
-            // The emitters currently only need entity metadata, so we can safely pass null.
-            // (Any future DbContext usage should be guarded.)
             Generate(contextType, entity, sb, version);
         }
 
