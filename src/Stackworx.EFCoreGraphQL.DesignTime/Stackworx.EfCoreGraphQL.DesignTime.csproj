@@ -10,10 +10,6 @@
     <Description>EF Core design-time integration for Stackworx.EfCoreGraphQL. Enables automatic DataLoader generation during migrations scaffolding.</Description>
   </PropertyGroup>
 
-  <PropertyGroup>
-    <PackageVersion>0.0.1-alpha</PackageVersion>
-  </PropertyGroup>
-
   <ItemGroup>
     <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.*" Condition="'$(TargetFramework)' == 'net8.0'">
       <PrivateAssets>all</PrivateAssets>
