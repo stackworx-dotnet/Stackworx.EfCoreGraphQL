@@ -67,7 +67,7 @@ public static class AuthorExtensions
 
 // Book
 [ExtendObjectType<Stackworx.EfCoreGraphQL.Tests.Data.Book>]
-public static class BookExtensions
+public class BookExtensions
 {
     /// <summary>
     /// Primary Key Data Loader for <see cref="Stackworx.EfCoreGraphQL.Tests.Data.Book"/>
