@@ -43,7 +43,9 @@ public class EfCoreMigrationsCodeGenerator(
         var sidecarPath = Path.Combine(outputDir, sidecarFileName);
         var hashPath = Path.Combine(outputDir, hashFileName);
 
-        var existingHash = File.Exists(hashPath) ? File.ReadAllText(hashPath).Trim() : null;
+        var existingHash = File.Exists(hashPath)
+            ? File.ReadAllText(hashPath).TrimStart('\uFEFF').Trim()
+            : null;
         if (string.Equals(existingHash, snapshotHash, StringComparison.OrdinalIgnoreCase))
         {
             return; // no schema/model change
