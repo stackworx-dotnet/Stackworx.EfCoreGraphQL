@@ -1,5 +1,77 @@
 # Read Me
 
+## DesignTime Integration
+
+This package can generate GraphQL DataLoaders (and related extensions) at **EF Core design-time** when you scaffold migrations. This is done by registering a custom `IMigrationsCodeGenerator`.
+
+### 1) Add the design-time package
+
+Reference `Stackworx.EfCoreGraphQL.DesignTime` from the project EF tooling loads at design-time (commonly your **startup** project, but any project EF loads for design-time services works).
+
+> Note: EF tooling loads design-time services from the *startup project* and the design-time assembly references it discovers.
+
+### 2) Register `EfCoreMigrationsCodeGenerator`
+
+Create a class that implements `IDesignTimeServices` (EF Core tooling discovers it automatically) and register the code generator:
+
+```csharp
+using Microsoft.EntityFrameworkCore.Design;
+using Microsoft.EntityFrameworkCore.Migrations.Design;
+using Microsoft.Extensions.DependencyInjection;
+using Stackworx.EfCoreGraphQL.DesignTime;
+
+public sealed class DesignTimeServices : IDesignTimeServices
+{
+    public void ConfigureDesignTimeServices(IServiceCollection services)
+        => services.AddSingleton<IMigrationsCodeGenerator, EfCoreMigrationsCodeGenerator>();
+}
+```
+
+Example: see `sample/Sample.DesignTime/DesignTimeServices.cs`.
+
+### 3) Configure the output directory (required)
+
+During migration scaffolding EF Core may run with a working directory that **is not** your migrations/target project directory (especially when `--startup-project` differs from the target project). To avoid writing generated files to the wrong place, sidecar output requires an explicit directory.
+
+Set this environment variable before running `dotnet ef`:
+
+- `STACKWORX_EFCOREGRAPHQL_SIDECAR_OUTPUT_DIR`
+
+It must point to an **existing directory**. A typical value is your migrations folder.
+
+macOS / Linux (zsh/bash):
+
+```zsh
+export STACKWORX_EFCOREGRAPHQL_SIDECAR_OUTPUT_DIR="/absolute/path/to/YourProject/Migrations"
+```
+
+Windows (PowerShell):
+
+```powershell
+$env:STACKWORX_EFCOREGRAPHQL_SIDECAR_OUTPUT_DIR = "C:\\path\\to\\YourProject\\Migrations"
+```
+
+If this variable is not set (or points to a non-existent directory), migration scaffolding will fail with a clear error.
+
+### 4) Scaffold a migration
+
+Run EF migrations as usual. The generator runs when EF scaffolds/updates the *model snapshot*.
+
+```zsh
+dotnet ef migrations add InitialCreate \
+  --project ./src/Your.Migrations.Project \
+  --startup-project ./src/Your.Api.Project
+```
+
+### Generated files
+
+Sidecar files are written into `STACKWORX_EFCOREGRAPHQL_SIDECAR_OUTPUT_DIR` with names based on the model snapshot name:
+
+- `{ModelSnapshotName}.DataLoaders.g.cs`
+- `{ModelSnapshotName}.DataLoaders.g.hash`
+
+The `.hash` file prevents unnecessary regeneration when the snapshot hasn’t changed.
+
 ## Goal
 
 Auto generate dataloaders and extensions to match EF core navigations.
@@ -272,4 +344,3 @@ public sealed class StudentExtensions
     }
 }
 ```
-

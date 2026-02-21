@@ -29,7 +29,7 @@ public record FieldExtension
 
     public required bool IsShadowProperty { get; init; }
     
-    public static FieldExtension FromNavigation(DbContext dbContext, INavigation nav)
+    public static FieldExtension FromNavigation(Type dbContextClass, INavigation nav)
     {
         var declaringType = nav.DeclaringEntityType.ClrType;
         var targetType = nav.TargetEntityType.ClrType;
@@ -85,7 +85,7 @@ public record FieldExtension
             ReferenceField = prop.Name,
             ReferenceFieldNullable = prop.IsNullable,
             IsShadowProperty = prop.IsShadowProperty(),
-            DbContextType = dbContext.GetType(),
+            DbContextType = dbContextClass,
             LoaderName = loaderName,
             Collection = nav.IsCollection,
             Notes = notes,

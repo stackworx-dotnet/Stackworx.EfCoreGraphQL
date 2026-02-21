@@ -8,7 +8,7 @@ public record DataLoader
 {
     public required string LoaderName { get; init; }
 
-    public required Type EntityType { get; init; }
+    public required string EntityType { get; init; }
 
     public required Type KeyType { get; init; }
 
@@ -31,7 +31,7 @@ public record DataLoader
         ManyToMany,
     }
 
-    public static DataLoader FromEntity(DbContext dbContext, IEntityType entityType)
+    public static DataLoader FromEntity(Type dbContextClass, IEntityType entityType)
     {
         var pk = entityType.FindPrimaryKey()
                  ?? throw new NotSupportedException($"Entity '{entityType.Name}' has no primary key.");
@@ -53,13 +53,13 @@ public record DataLoader
             KeyType = keyType,
             ReferenceField = keyPropName,
             IsShadowProperty = pkProp.IsShadowProperty(),
-            EntityType = entityType.ClrType,
-            DbContextType = dbContext.GetType(),
+            EntityType = TypeUtils.GetNestedQualifiedName(entityType.ClrType),
+            DbContextType = dbContextClass,
             Notes = $"Primary Key Data Loader for <see cref=\"{TypeUtils.GetNestedQualifiedName(entityType.ClrType)}\"/>",
         };
     }
     
-    public static DataLoader FromNavigation(DbContext dbContext, INavigation nav)
+    public static DataLoader FromNavigation(Type dbContextClass, INavigation nav)
     {
         var fk = nav.ForeignKey;
         IProperty prop;
@@ -99,8 +99,8 @@ public record DataLoader
             KeyType = keyType,
             ReferenceField = prop.Name,
             IsShadowProperty = prop.IsShadowProperty(),
-            EntityType = entityType.ClrType,
-            DbContextType = dbContext.GetType(),
+            EntityType = TypeUtils.GetNestedQualifiedName(entityType.ClrType),
+            DbContextType = dbContextClass,
             Notes = $"Navigation Data Loader for <see cref=\"{TypeUtils.GetNestedQualifiedName(entityType.ClrType)}.{nav.Inverse?.Name}\"/>",
         };
     }
@@ -139,7 +139,7 @@ public record DataLoader
                     sb.AppendLine($"        /*");
                 }
                 
-                sb.AppendLine($"        var items = await context.Set<{TypeUtils.CsDisplay(this.EntityType)}>()");
+                sb.AppendLine($"        var items = await context.Set<{this.EntityType}>()");
                 sb.AppendLine($"            .AsNoTracking()");
             
                 if (this.Nullable)
@@ -193,7 +193,7 @@ public record DataLoader
                 sb.AppendLine($"        CancellationToken ct)");
                 sb.AppendLine("    {");
                 
-                sb.AppendLine($"        return await context.Set<{TypeUtils.CsDisplay(this.EntityType)}>()");
+                sb.AppendLine($"        return await context.Set<{this.EntityType}>()");
                 sb.AppendLine($"            .AsNoTracking()");
 
                 if (this.Nullable)
