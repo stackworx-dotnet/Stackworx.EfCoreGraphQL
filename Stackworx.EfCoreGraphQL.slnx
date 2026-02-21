@@ -1,16 +1,17 @@
 <Solution>
   <Folder Name="/sample/">
-    <Project Path="sample\Sample.Generate\Sample.Generate.csproj" Type="Classic C#" />
-    <Project Path="sample\Sample\Sample.csproj" Type="Classic C#" />
+    <Project Path="sample\Sample.Generate\Sample.Generate.csproj" Type="C#" />
+    <Project Path="sample\Sample\Sample.csproj" Type="C#" />
   </Folder>
   <Folder Name="/src/">
-    <Project Path="src\Stackworx.EfCoreGraphQL.Abstractions\Stackworx.EfCoreGraphQL.Abstractions.csproj" Type="Classic C#" />
-    <Project Path="src\Stackworx.EfCoreGraphQL.Validation.XunitV3\Stackworx.EfCoreGraphQL.Validation.XunitV3.csproj" Type="Classic C#" />
-    <Project Path="src\Stackworx.EfCoreGraphQL.Validation\Stackworx.EfCoreGraphQL.Validation.csproj" Type="Classic C#" />
-    <Project Path="src\Stackworx.EfCoreGraphQL\Stackworx.EfCoreGraphQL.csproj" Type="Classic C#" />
+    <Project Path="src/Stackworx.EFCoreGraphQL.DesignTime/Stackworx.EfCoreGraphQL.DesignTime.csproj" />
+    <Project Path="src\Stackworx.EfCoreGraphQL.Abstractions\Stackworx.EfCoreGraphQL.Abstractions.csproj" Type="C#" />
+    <Project Path="src\Stackworx.EfCoreGraphQL.Validation.XunitV3\Stackworx.EfCoreGraphQL.Validation.XunitV3.csproj" Type="C#" />
+    <Project Path="src\Stackworx.EfCoreGraphQL.Validation\Stackworx.EfCoreGraphQL.Validation.csproj" Type="C#" />
+    <Project Path="src\Stackworx.EfCoreGraphQL\Stackworx.EfCoreGraphQL.csproj" Type="C#" />
   </Folder>
   <Folder Name="/tests/">
-    <Project Path="tests\Stackworx.EfCoreGraphQL.Tests\Stackworx.EfCoreGraphQL.Tests.csproj" Type="Classic C#" />
-    <Project Path="tests\Stackworx.EfCoreGraphQL.Validation.Tests\Stackworx.EfCoreGraphQL.Validation.Tests.csproj" Type="Classic C#" />
+    <Project Path="tests\Stackworx.EfCoreGraphQL.Tests\Stackworx.EfCoreGraphQL.Tests.csproj" Type="C#" />
+    <Project Path="tests\Stackworx.EfCoreGraphQL.Validation.Tests\Stackworx.EfCoreGraphQL.Validation.Tests.csproj" Type="C#" />
   </Folder>
 </Solution>
