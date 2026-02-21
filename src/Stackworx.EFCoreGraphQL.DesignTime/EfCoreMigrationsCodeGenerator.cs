@@ -1,6 +1,5 @@
 namespace Stackworx.EfCoreGraphQL.DesignTime;
 
-using System.Security.Cryptography;
 using System.Text;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations.Design;
@@ -20,38 +19,26 @@ public class EfCoreMigrationsCodeGenerator(
         IModel model)
     {
         var snapshotCode = base.GenerateSnapshot(modelSnapshotNamespace, contextType, modelSnapshotName, model);
-        TryGenerateSidecar(snapshotCode, modelSnapshotNamespace, modelSnapshotName, model, contextType);
+        TryGenerateSidecar(modelSnapshotNamespace, modelSnapshotName, model, contextType);
         return snapshotCode;
     }
 
-    private static void TryGenerateSidecar(string snapshotCode,
+    private static void TryGenerateSidecar(
         string? modelSnapshotNamespace,
         string modelSnapshotName,
         IModel model,
         Type contextType)
     {
-        // We intentionally fingerprint the snapshot code (not the model) because it already captures
-        // provider-specific annotations and is stable across EF versions for a given model.
-        var snapshotHash = Hash(snapshotCode);
+        // Sidecar file is generated on every snapshot generation.
+        // This avoids stale output when generation-affecting changes (e.g. GraphQLIgnore attributes)
+        // don't influence the EF model snapshot text.
 
-        // Sidecar + its hash live next to each other.
         var baseName = modelSnapshotName; // typically "{DbContext}ModelSnapshot"
         var sidecarFileName = baseName + ".DataLoaders.g.cs";
-        var hashFileName = baseName + ".DataLoaders.g.hash";
 
         var outputDir = ResolveRequiredOutputDir();
         var sidecarPath = Path.Combine(outputDir, sidecarFileName);
-        var hashPath = Path.Combine(outputDir, hashFileName);
 
-        var existingHash = File.Exists(hashPath)
-            ? File.ReadAllText(hashPath).TrimStart('\uFEFF').Trim()
-            : null;
-        if (string.Equals(existingHash, snapshotHash, StringComparison.OrdinalIgnoreCase))
-        {
-            return; // no schema/model change
-        }
-
-        // Generate file content
         var @namespace = string.IsNullOrWhiteSpace(modelSnapshotNamespace)
             ? "Generated.DataLoaders"
             : modelSnapshotNamespace + ".Generated.DataLoaders";
@@ -66,7 +53,6 @@ public class EfCoreMigrationsCodeGenerator(
             });
 
         AtomicWrite(sidecarPath, content);
-        AtomicWrite(hashPath, snapshotHash + Environment.NewLine);
     }
 
     private static string ResolveRequiredOutputDir()
@@ -89,12 +75,6 @@ public class EfCoreMigrationsCodeGenerator(
         return fullPath;
     }
 
-    private static string Hash(string s)
-    {
-        var bytes = Encoding.UTF8.GetBytes(s);
-        var hash = SHA256.HashData(bytes);
-        return Convert.ToHexString(hash);
-    }
 
     private static void AtomicWrite(string path, string content)
     {

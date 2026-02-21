@@ -68,9 +68,8 @@ dotnet ef migrations add InitialCreate \
 Sidecar files are written into `STACKWORX_EFCOREGRAPHQL_SIDECAR_OUTPUT_DIR` with names based on the model snapshot name:
 
 - `{ModelSnapshotName}.DataLoaders.g.cs`
-- `{ModelSnapshotName}.DataLoaders.g.hash`
 
-The `.hash` file prevents unnecessary regeneration when the snapshot hasn’t changed.
+The sidecar is regenerated when EF scaffolds/updates the model snapshot to avoid stale output when generation-affecting changes don’t influence the EF snapshot text.
 
 ## Goal
 

@@ -482,3 +482,8 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
+
+# Some tooling occasionally creates a directory literally named with a backslash on macOS/Linux
+# (e.g. `bin\Debug`). Ignore it too.
+bin\\Debug/
+Bin\\Debug/
