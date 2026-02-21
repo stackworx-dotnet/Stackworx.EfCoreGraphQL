@@ -27,7 +27,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Stackworx.EfCoreGraphQL\Stackworx.EfCoreGraphQL.csproj" />
+    <ProjectReference Include="..\Stackworx.EfCoreGraphQL\Stackworx.EfCoreGraphQL.csproj">
+      <PrivateAssets>all</PrivateAssets>
+    </ProjectReference>
   </ItemGroup>
 
 </Project>

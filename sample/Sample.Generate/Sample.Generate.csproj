@@ -10,6 +10,6 @@
 
     <ItemGroup>
       <ProjectReference Include="..\Sample\Sample.csproj" />
+      <ProjectReference Include="..\..\src\Stackworx.EfCoreGraphQL\Stackworx.EfCoreGraphQL.csproj" />
     </ItemGroup>
-
 </Project>

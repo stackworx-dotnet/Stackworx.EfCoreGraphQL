@@ -1,5 +1,6 @@
 <Solution>
   <Folder Name="/sample/">
+    <Project Path="sample/Sample.DesignTime/Sample.DesignTime.csproj" />
     <Project Path="sample\Sample.Generate\Sample.Generate.csproj" Type="C#" />
     <Project Path="sample\Sample\Sample.csproj" Type="C#" />
   </Folder>

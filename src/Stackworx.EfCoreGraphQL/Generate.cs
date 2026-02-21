@@ -89,7 +89,7 @@ public static class DataLoaderGenerator
                 continue;
             }
 
-            Generate(dbContext, entity, sb, version);
+            Generate(dbContext.GetType(), entity, sb, version);
         }
 
         await File.WriteAllTextAsync(outPath, sb.ToString());
@@ -120,6 +120,7 @@ public static class DataLoaderGenerator
     /// </summary>
     public static string GenerateString(
         IModel model,
+        Type contextType,
         GenerateOptions? options = null)
     {
         options ??= new GenerateOptions();
@@ -173,7 +174,7 @@ public static class DataLoaderGenerator
             // Design-time generation doesn't have a DbContext instance.
             // The emitters currently only need entity metadata, so we can safely pass null.
             // (Any future DbContext usage should be guarded.)
-            Generate(dbContext: null!, entity, sb, version);
+            Generate(contextType, entity, sb, version);
         }
 
         return sb.ToString();
@@ -270,7 +271,7 @@ public static class DataLoaderGenerator
         return process.ExitCode == 0;
     }
 
-    private static void Generate(DbContext dbContext, IEntityType entity, StringBuilder sb, int version)
+    private static void Generate(Type dbContextClass, IEntityType entity, StringBuilder sb, int version)
     {
         // Skip join tables
         var pk = entity.FindPrimaryKey();
@@ -304,7 +305,7 @@ public static class DataLoaderGenerator
 
         if (entity.FindPrimaryKey()?.Properties.Count == 1)
         {
-            var dataLoader = DataLoader.FromEntity(dbContext, entity);
+            var dataLoader = DataLoader.FromEntity(dbContextClass, entity);
             sb.Append(dataLoader.EmitComment());
             sb.AppendLine(dataLoader.Emit(version));
         }
@@ -327,12 +328,12 @@ public static class DataLoaderGenerator
             // Skip dependant navigations
             if (!navigation.IsOnDependent)
             {
-                var dataLoader = DataLoader.FromNavigation(dbContext, navigation);
+                var dataLoader = DataLoader.FromNavigation(dbContextClass, navigation);
                 sb.Append(dataLoader.EmitComment());
                 sb.AppendLine(dataLoader.Emit(version));
             }
 
-            var field = FieldExtension.FromNavigation(dbContext, navigation);
+            var field = FieldExtension.FromNavigation(dbContextClass, navigation);
             sb.Append(field.EmitComment());
             sb.AppendLine(field.Emit());
         }
@@ -384,7 +385,7 @@ public static class DataLoaderGenerator
             if (!navigation.IsOnDependent)
             {
                 // TODO: emit extension
-                var manyToMany = ManyToMany.FromNavigation(dbContext, navigation);
+                var manyToMany = ManyToMany.FromNavigation(dbContextClass, navigation);
                 sb.AppendLine(manyToMany.EmitDataLoader());
                 sb.AppendLine(manyToMany.EmitFieldExtension());
             }

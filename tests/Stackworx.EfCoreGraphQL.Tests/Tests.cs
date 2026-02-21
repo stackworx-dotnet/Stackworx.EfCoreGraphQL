@@ -13,7 +13,7 @@ public class Tests
         await AppDbContext.WithSqliteInMemoryAsync(db =>
         {
             var entity = db.GetEntity<User>();
-            var config = DataLoader.FromEntity(db, entity);
+            var config = DataLoader.FromEntity(db.GetType(), entity);
 
             config.Should().BeEquivalentTo(new DataLoader
             {
@@ -56,7 +56,7 @@ public class Tests
             nav.IsOnDependent.Should().BeFalse();
             nav.IsCollection.Should().BeFalse();
             
-            var dataLoaderConfig = DataLoader.FromNavigation(db, nav);
+            var dataLoaderConfig = DataLoader.FromNavigation(db.GetType(), nav);
 
             dataLoaderConfig.Should().BeEquivalentTo(new DataLoader
             {
@@ -86,7 +86,7 @@ public class Tests
                         }
                     """);
 
-            var fieldConfig = FieldExtension.FromNavigation(db, nav);
+            var fieldConfig = FieldExtension.FromNavigation(db.GetType(), nav);
             fieldConfig.Should().BeEquivalentTo(new FieldExtension
             {
                 ReferenceField = "Id",
@@ -126,7 +126,7 @@ public class Tests
             nav.IsOnDependent.Should().BeTrue();
             nav.IsCollection.Should().BeFalse();
 
-            var config = DataLoader.FromNavigation(db, nav);
+            var config = DataLoader.FromNavigation(db.GetType(), nav);
 
             config.Should().BeEquivalentTo(new DataLoader
             {
@@ -156,7 +156,7 @@ public class Tests
                         }
                     """);
 
-            var fieldConfig = FieldExtension.FromNavigation(db, nav);
+            var fieldConfig = FieldExtension.FromNavigation(db.GetType(), nav);
             fieldConfig.Should().BeEquivalentTo(new FieldExtension
             {
                 ReferenceField = "UserId",
@@ -196,7 +196,7 @@ public class Tests
             nav.IsOnDependent.Should().BeFalse();
             nav.IsCollection.Should().BeFalse();
 
-            DataLoader.FromNavigation(db, nav).Should().BeEquivalentTo(new DataLoader
+            DataLoader.FromNavigation(db.GetType(), nav).Should().BeEquivalentTo(new DataLoader
             {
                 LoaderName = "PassportByPersonId",
                 EntityType = typeof(Passport).ToString(),
@@ -209,7 +209,7 @@ public class Tests
                 Notes = "Navigation Data Loader for <see cref=\"Stackworx.EfCoreGraphQL.Tests.Data.Passport.Person\"/>",
             });
 
-            var fieldConfig = FieldExtension.FromNavigation(db, nav);
+            var fieldConfig = FieldExtension.FromNavigation(db.GetType(), nav);
             fieldConfig.Should().BeEquivalentTo(new FieldExtension
             {
                 ReferenceField = "Id",
@@ -249,7 +249,7 @@ public class Tests
             nav.IsOnDependent.Should().BeFalse();
             nav.IsCollection.Should().BeTrue();
 
-            var config = DataLoader.FromNavigation(db, nav);
+            var config = DataLoader.FromNavigation(db.GetType(), nav);
             config.Should().BeEquivalentTo(new DataLoader
             {
                 LoaderName = "CommentsByPostId",
@@ -280,7 +280,7 @@ public class Tests
                         }
                     """);
 
-            var fieldConfig = FieldExtension.FromNavigation(db, nav);
+            var fieldConfig = FieldExtension.FromNavigation(db.GetType(), nav);
             fieldConfig.Should().BeEquivalentTo(new FieldExtension
             {
                 ReferenceField = "Id",
@@ -320,8 +320,8 @@ public class Tests
             nav.IsOnDependent.Should().BeFalse();
             nav.IsCollection.Should().BeTrue();
 
-            ManyToMany.FromNavigation(db, nav);
-            var manyToMany = ManyToMany.FromNavigation(db, nav);
+            ManyToMany.FromNavigation(db.GetType(), nav);
+            var manyToMany = ManyToMany.FromNavigation(db.GetType(), nav);
             manyToMany.Should().BeEquivalentTo(new ManyToMany
             {
                 LoaderName = "TagsByPosts",
@@ -386,8 +386,8 @@ public class Tests
             nav.IsOnDependent.Should().BeFalse();
             nav.IsCollection.Should().BeTrue();
 
-            ManyToMany.FromNavigation(db, nav);
-            var manyToMany = ManyToMany.FromNavigation(db, nav);
+            ManyToMany.FromNavigation(db.GetType(), nav);
+            var manyToMany = ManyToMany.FromNavigation(db.GetType(), nav);
             manyToMany.Should().BeEquivalentTo(new ManyToMany
             {
                 LoaderName = "PostsByTags",
@@ -449,7 +449,7 @@ public class Tests
         await AppDbContext.WithSqliteInMemoryAsync(db =>
         {
             var nav = db.GetNavigation<Order>(nameof(Order.Items));
-            var config = DataLoader.FromNavigation(db, nav);
+            var config = DataLoader.FromNavigation(db.GetType(), nav);
 
             config.Should().BeEquivalentTo(new DataLoader
             {

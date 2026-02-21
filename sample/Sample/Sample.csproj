@@ -19,9 +19,4 @@
         <PackageReference Include="HotChocolate.Data.EntityFramework" Version="15.1.11" />
         <PackageReference Include="HotChocolate.Types.Analyzers" Version="15.1.11" />
     </ItemGroup>
-
-    <ItemGroup>
-        <ProjectReference Include="..\..\src\Stackworx.EfCoreGraphQL\Stackworx.EfCoreGraphQL.csproj" />
-    </ItemGroup>
-
 </Project>

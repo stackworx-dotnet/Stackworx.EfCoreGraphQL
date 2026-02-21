@@ -31,7 +31,7 @@ public record DataLoader
         ManyToMany,
     }
 
-    public static DataLoader FromEntity(DbContext dbContext, IEntityType entityType)
+    public static DataLoader FromEntity(Type dbContextClass, IEntityType entityType)
     {
         var pk = entityType.FindPrimaryKey()
                  ?? throw new NotSupportedException($"Entity '{entityType.Name}' has no primary key.");
@@ -54,12 +54,12 @@ public record DataLoader
             ReferenceField = keyPropName,
             IsShadowProperty = pkProp.IsShadowProperty(),
             EntityType = TypeUtils.GetNestedQualifiedName(entityType.ClrType),
-            DbContextType = dbContext.GetType(),
+            DbContextType = dbContextClass,
             Notes = $"Primary Key Data Loader for <see cref=\"{TypeUtils.GetNestedQualifiedName(entityType.ClrType)}\"/>",
         };
     }
     
-    public static DataLoader FromNavigation(DbContext dbContext, INavigation nav)
+    public static DataLoader FromNavigation(Type dbContextClass, INavigation nav)
     {
         var fk = nav.ForeignKey;
         IProperty prop;
@@ -100,7 +100,7 @@ public record DataLoader
             ReferenceField = prop.Name,
             IsShadowProperty = prop.IsShadowProperty(),
             EntityType = TypeUtils.GetNestedQualifiedName(entityType.ClrType),
-            DbContextType = dbContext.GetType(),
+            DbContextType = dbContextClass,
             Notes = $"Navigation Data Loader for <see cref=\"{TypeUtils.GetNestedQualifiedName(entityType.ClrType)}.{nav.Inverse?.Name}\"/>",
         };
     }

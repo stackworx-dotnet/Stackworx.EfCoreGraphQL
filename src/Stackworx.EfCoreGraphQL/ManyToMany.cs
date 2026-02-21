@@ -30,7 +30,7 @@ public record ManyToMany
     
     public string? FieldNotes { get; set; }
     
-    public static ManyToMany FromNavigation(DbContext dbContext, ISkipNavigation nav)
+    public static ManyToMany FromNavigation(Type dbContextClassType, ISkipNavigation nav)
     {
         var inverse = nav.Inverse;
 
@@ -50,7 +50,7 @@ public record ManyToMany
         return new ManyToMany
         {
             LoaderName = LoaderNames.GroupLoaderName(nav),
-            DbContextType = dbContext.GetType(),
+            DbContextType = dbContextClassType,
             ChildPropertyName = nav.Name,
             ChildKeyName = nav.ForeignKey.PrincipalKey.Properties.Single().Name,
             ChildKeyType = nav.ForeignKey.PrincipalKey.Properties.Single().ClrType,
