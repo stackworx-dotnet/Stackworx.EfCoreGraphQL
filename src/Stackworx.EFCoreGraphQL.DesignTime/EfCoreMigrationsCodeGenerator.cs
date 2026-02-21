@@ -102,11 +102,6 @@ public class EfCoreMigrationsCodeGenerator(
         File.WriteAllText(tmp, content, Encoding.UTF8);
 
         // Replace is atomic on Windows; on Unix it's effectively atomic within a filesystem.
-        if (File.Exists(path))
-        {
-            File.Delete(path);
-        }
-
-        File.Move(tmp, path);
+        File.Move(tmp, path, overwrite: true);
     }
 }
