@@ -118,4 +118,9 @@ internal static class TypeUtils
         elementType = clrType;
         return false;
     }
+
+    public static string ToGraphQlFieldName(string name)
+        => string.IsNullOrEmpty(name) || char.IsLower(name[0])
+            ? name
+            : char.ToLowerInvariant(name[0]) + name.Substring(1);
 }

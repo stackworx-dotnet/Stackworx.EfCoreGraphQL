@@ -66,8 +66,8 @@ public static class AuthorExtensions
 }
 
 // Book
-[ExtendObjectType<Stackworx.EfCoreGraphQL.Tests.Data.Book>]
-public class BookExtensions
+[ExtendObjectType<Stackworx.EfCoreGraphQL.Tests.Data.Book>(IgnoreFields = ["authorId"])]
+public static class BookExtensions
 {
     /// <summary>
     /// Primary Key Data Loader for <see cref="Stackworx.EfCoreGraphQL.Tests.Data.Book"/>
@@ -98,7 +98,7 @@ public class BookExtensions
 }
 
 // Comment
-[ExtendObjectType<Stackworx.EfCoreGraphQL.Tests.Data.Comment>]
+[ExtendObjectType<Stackworx.EfCoreGraphQL.Tests.Data.Comment>(IgnoreFields = ["postId"])]
 public static class CommentExtensions
 {
     /// <summary>
@@ -184,7 +184,7 @@ public static class CourseExtensions
 }
 
 // Passport
-[ExtendObjectType<Stackworx.EfCoreGraphQL.Tests.Data.Passport>]
+[ExtendObjectType<Stackworx.EfCoreGraphQL.Tests.Data.Passport>(IgnoreFields = ["personId"])]
 public static class PassportExtensions
 {
     /// <summary>
@@ -521,7 +521,7 @@ public static class UserExtensions
 }
 
 // UserProfile
-[ExtendObjectType<Stackworx.EfCoreGraphQL.Tests.Data.UserProfile>]
+[ExtendObjectType<Stackworx.EfCoreGraphQL.Tests.Data.UserProfile>(IgnoreFields = ["userId"])]
 public static class UserProfileExtensions
 {
     /// <summary>

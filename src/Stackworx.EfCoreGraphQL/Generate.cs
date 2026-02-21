@@ -285,7 +285,20 @@ public static class DataLoaderGenerator
         }
 
         sb.AppendLine($"// {entity.DisplayName()}");
-        sb.AppendLine($"[ExtendObjectType<{TypeUtils.GetNestedQualifiedName(entity.ClrType)}>]");
+
+        var ignoreFields = ForeignKeyIgnoreFields.Get(entity);
+        var entityTypeName = TypeUtils.GetNestedQualifiedName(entity.ClrType);
+
+        if (ignoreFields.Count > 0)
+        {
+            var ignoreFieldsLiteral = string.Join(", ", ignoreFields.Select(f => $"\"{f}\""));
+            sb.AppendLine($"[ExtendObjectType<{entityTypeName}>(IgnoreFields = [{ignoreFieldsLiteral}])]");
+        }
+        else
+        {
+            sb.AppendLine($"[ExtendObjectType<{entityTypeName}>]");
+        }
+
         sb.AppendLine($"public static class {entity.DisplayName()}Extensions");
         sb.AppendLine($"{{");
 
