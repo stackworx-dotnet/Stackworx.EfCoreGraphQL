@@ -15,7 +15,7 @@ builder
     .AddGraphQL()
     .AddQueryType<Query>()
     .RegisterDbContextFactory<AppDbContext>()
-    // .AddSam()
+    .AddDesignTimeTypes()
     .InitializeOnStartup();
 
 var app = builder.Build();

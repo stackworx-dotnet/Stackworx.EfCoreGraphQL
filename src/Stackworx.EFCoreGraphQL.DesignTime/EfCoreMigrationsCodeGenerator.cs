@@ -11,6 +11,11 @@ public class EfCoreMigrationsCodeGenerator(
     CSharpMigrationsGeneratorDependencies csharpDependencies)
     : CSharpMigrationsGenerator(dependencies, csharpDependencies)
 {
+    // The generator runs during design-time migration scaffolding.
+    // When startup project != target project, CWD is often not the migrations project.
+    // To avoid writing files into the wrong repo folder, we require an explicit output directory.
+    private const string SidecarOutputDirEnvVar = "STACKWORX_EFCOREGRAPHQL_SIDECAR_OUTPUT_DIR";
+
     public override string GenerateSnapshot(string? modelSnapshotNamespace, Type contextType, string modelSnapshotName,
         IModel model)
     {
@@ -30,14 +35,11 @@ public class EfCoreMigrationsCodeGenerator(
         var snapshotHash = Hash(snapshotCode);
 
         // Sidecar + its hash live next to each other.
-        // Since EF doesn’t tell us the snapshot file path, we write relative to CWD.
-        // In migrations scaffolding, that’s the project directory containing the Migrations folder.
-        // If your tooling runs with a different working directory, set it accordingly.
         var baseName = modelSnapshotName; // typically "{DbContext}ModelSnapshot"
         var sidecarFileName = baseName + ".DataLoaders.g.cs";
         var hashFileName = baseName + ".DataLoaders.g.hash";
 
-        var outputDir = Environment.CurrentDirectory;
+        var outputDir = ResolveRequiredOutputDir();
         var sidecarPath = Path.Combine(outputDir, sidecarFileName);
         var hashPath = Path.Combine(outputDir, hashFileName);
 
@@ -48,17 +50,41 @@ public class EfCoreMigrationsCodeGenerator(
         }
 
         // Generate file content
+        var @namespace = string.IsNullOrWhiteSpace(modelSnapshotNamespace)
+            ? "Generated.DataLoaders"
+            : modelSnapshotNamespace + ".Generated.DataLoaders";
+
         var content = DataLoaderGenerator.GenerateString(
             model,
             contextType,
             new GenerateOptions
             {
-                Namespace = modelSnapshotNamespace + ".Generated.DataLoaders",
+                Namespace = @namespace,
                 // Keep defaults for Mode/Filter; consumers can later add configurability.
             });
 
         AtomicWrite(sidecarPath, content);
         AtomicWrite(hashPath, snapshotHash + Environment.NewLine);
+    }
+
+    private static string ResolveRequiredOutputDir()
+    {
+        var configured = Environment.GetEnvironmentVariable(SidecarOutputDirEnvVar);
+        if (string.IsNullOrWhiteSpace(configured))
+        {
+            throw new InvalidOperationException(
+                $"{nameof(Stackworx)} EFCoreGraphQL sidecar generation requires the environment variable '{SidecarOutputDirEnvVar}' to be set to the directory where sidecar files should be written (typically the migrations folder or the project directory containing the snapshot). " +
+                "This is required to avoid writing files to an unexpected working directory when the EF Core Startup Project differs from the Target Project.");
+        }
+
+        var fullPath = Path.GetFullPath(configured);
+        if (!Directory.Exists(fullPath))
+        {
+            throw new DirectoryNotFoundException(
+                $"Environment variable '{SidecarOutputDirEnvVar}' points to '{configured}', but that directory does not exist (resolved to '{fullPath}').");
+        }
+
+        return fullPath;
     }
 
     private static string Hash(string s)
