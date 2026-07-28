@@ -575,6 +575,27 @@ public class Tests
     }
 
     [Fact]
+    public async Task TestForeignKeyFieldsCanBeKept()
+    {
+        await AppDbContext.WithSqliteInMemoryAsync(db =>
+        {
+            var hidden = DataLoaderGenerator.GenerateString(db.Model, typeof(AppDbContext));
+            hidden.Should().Contain("IgnoreFields = [\"authorId\"]");
+
+            // Hiding foreign-key scalars removes fields an existing client may already select, so it has
+            // to be possible to keep them.
+            var kept = DataLoaderGenerator.GenerateString(
+                db.Model,
+                typeof(AppDbContext),
+                new GenerateOptions { IgnoreForeignKeyFields = false });
+
+            kept.Should().NotContain("IgnoreFields");
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
     public async Task TestShadowForeignKeyNavigationIsSkipped()
     {
         await AppDbContext.WithSqliteInMemoryAsync(db =>

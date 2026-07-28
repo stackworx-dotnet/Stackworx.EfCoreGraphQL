@@ -130,7 +130,7 @@ public static class DataLoaderGenerator
                 continue;
             }
 
-            Generate(contextType, entity, sb, version, emittedLoaders);
+            Generate(contextType, entity, sb, version, emittedLoaders, options.IgnoreForeignKeyFields);
         }
 
         return sb.ToString();
@@ -267,7 +267,8 @@ public static class DataLoaderGenerator
         IEntityType entity,
         StringBuilder sb,
         int version,
-        Dictionary<string, string> emittedLoaders)
+        Dictionary<string, string> emittedLoaders,
+        bool ignoreForeignKeyFields)
     {
         // Skip join tables
         var pk = entity.FindPrimaryKey();
@@ -283,7 +284,9 @@ public static class DataLoaderGenerator
 
         sb.AppendLine($"// {entity.DisplayName()}");
 
-        var ignoreFields = ForeignKeyIgnoreFields.Get(entity);
+        var ignoreFields = ignoreForeignKeyFields
+            ? ForeignKeyIgnoreFields.Get(entity)
+            : [];
         var entityTypeName = TypeUtils.GetNestedQualifiedName(entity.ClrType);
 
         if (ignoreFields.Count > 0)
