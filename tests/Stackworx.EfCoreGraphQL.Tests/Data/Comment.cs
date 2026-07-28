@@ -6,5 +6,5 @@ public class Comment
     public required string Text { get; set; }
 
     public int? PostId { get; set; }
-    public Post? Post { get; set; } // FK is shadow: int? PostId
+    public Post? Post { get; set; }
 }

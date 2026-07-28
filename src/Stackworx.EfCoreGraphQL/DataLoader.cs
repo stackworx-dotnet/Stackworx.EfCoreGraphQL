@@ -20,6 +20,12 @@ public record DataLoader
 
     public bool Nullable { get; init; }
 
+    /// <summary>
+    /// True when the key property is a nullable value type (<c>int?</c>), so its value is reached through
+    /// <c>.Value</c>. A nullable reference type (<c>string?</c>) is dereferenced directly.
+    /// </summary>
+    public bool KeyIsNullableValueType { get; init; }
+
     public DataLoaderType Type { get; init; }
 
     public string? Notes { get; set; }
@@ -49,6 +55,7 @@ public record DataLoader
         {
             LoaderName = LoaderNames.BatchLoaderName(entityType, pkProp),
             Nullable = false,
+            KeyIsNullableValueType = TypeUtils.TryUnwrapNullable(pkProp.ClrType, out _),
             Type = DataLoader.DataLoaderType.OneToOne,
             KeyType = keyType,
             ReferenceField = keyPropName,
@@ -75,7 +82,8 @@ public record DataLoader
         }
         
         var keyType = prop.ClrType;
-        if (TypeUtils.TryUnwrapNullable(keyType, out var inner))
+        var keyIsNullableValueType = TypeUtils.TryUnwrapNullable(keyType, out var inner);
+        if (keyIsNullableValueType)
         {
             keyType = inner;
         }
@@ -95,6 +103,7 @@ public record DataLoader
                 ? LoaderNames.GroupLoaderName(nav.TargetEntityType, prop)
                 : LoaderNames.BatchLoaderName(nav.TargetEntityType, prop),
             Nullable = nullable,
+            KeyIsNullableValueType = keyIsNullableValueType,
             Type = type,
             KeyType = keyType,
             ReferenceField = prop.Name,
@@ -114,10 +123,30 @@ public record DataLoader
         return sb.ToString();
     }
 
+    /// <summary>
+    /// How the key is read off an entity. A nullable value type needs <c>.Value</c>; a nullable reference
+    /// type only needs the null-forgiving operator, since it has no <c>.Value</c> member.
+    /// </summary>
+    private string KeyAccess
+    {
+        get
+        {
+            if (!this.Nullable)
+            {
+                return $"e.{this.ReferenceField}";
+            }
+
+            return this.KeyIsNullableValueType
+                ? $"e.{this.ReferenceField}!.Value"
+                : $"e.{this.ReferenceField}!";
+        }
+    }
+
     public string Emit(int version)
     {
         var sb = new StringBuilder();
         var keyType = TypeUtils.GetNestedQualifiedName(this.KeyType);
+        var keyAccess = this.KeyAccess;
 
         sb.AppendLine($"    [DataLoader]");
         
@@ -142,26 +171,10 @@ public record DataLoader
                 sb.AppendLine($"        var items = await context.Set<{this.EntityType}>()");
                 sb.AppendLine($"            .AsNoTracking()");
             
-                if (this.Nullable)
-                {
-                    sb.AppendLine($"            .Where(e => keys.Contains(e.{this.ReferenceField}!.Value))");
-                }
-                else
-                {
-                    sb.AppendLine($"            .Where(e => keys.Contains(e.{this.ReferenceField}))");
-                }
-
+                sb.AppendLine($"            .Where(e => keys.Contains({keyAccess}))");
                 sb.AppendLine($"            .ToListAsync(ct);");
                 sb.AppendLine();
-
-                if (this.Nullable)
-                {
-                    sb.AppendLine($"        return items.ToLookup(e => e.{this.ReferenceField}!.Value);");
-                }
-                else
-                {
-                    sb.AppendLine($"        return items.ToLookup(e => e.{this.ReferenceField});");
-                }
+                sb.AppendLine($"        return items.ToLookup(e => {keyAccess});");
                 
                 if (this.IsShadowProperty)
                 {
@@ -196,16 +209,8 @@ public record DataLoader
                 sb.AppendLine($"        return await context.Set<{this.EntityType}>()");
                 sb.AppendLine($"            .AsNoTracking()");
 
-                if (this.Nullable)
-                {
-                    sb.AppendLine($"            .Where(e => keys.Contains(e.{this.ReferenceField}!.Value))");
-                    sb.AppendLine($"            .ToDictionaryAsync(e => e.{this.ReferenceField}!.Value, ct);");
-                }
-                else
-                {
-                    sb.AppendLine($"            .Where(e => keys.Contains(e.{this.ReferenceField}))");
-                    sb.AppendLine($"            .ToDictionaryAsync(e => e.{this.ReferenceField}, ct);");
-                }
+                sb.AppendLine($"            .Where(e => keys.Contains({keyAccess}))");
+                sb.AppendLine($"            .ToDictionaryAsync(e => {keyAccess}, ct);");
 
                 sb.AppendLine("    }");
                 break;

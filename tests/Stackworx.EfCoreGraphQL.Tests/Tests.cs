@@ -1,5 +1,6 @@
 namespace Stackworx.EfCoreGraphQL.Tests;
 
+using System.Text.RegularExpressions;
 using FluentAssertions;
 using Stackworx.EfCoreGraphQL.Tests.Data;
 
@@ -201,6 +202,7 @@ public class Tests
                 LoaderName = "PassportByPersonId",
                 EntityType = typeof(Passport).ToString(),
                 Nullable = true,
+                KeyIsNullableValueType = true,
                 Type = DataLoader.DataLoaderType.OneToOne,
                 KeyType = typeof(int),
                 ReferenceField = "PersonId",
@@ -255,6 +257,7 @@ public class Tests
                 LoaderName = "CommentsByPostId",
                 EntityType = typeof(Comment).ToString(),
                 Nullable = true,
+                KeyIsNullableValueType = true,
                 Type = DataLoader.DataLoaderType.OneToMany,
                 KeyType = typeof(int),
                 ReferenceField = "PostId",
@@ -462,6 +465,130 @@ public class Tests
                 DbContextType = typeof(AppDbContext),
                 IsShadowProperty = false,
             });
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public async Task TestSharedPrimaryKeyOneToOneEmitsEachLoaderOnce()
+    {
+        await AppDbContext.WithSqliteInMemoryAsync(db =>
+        {
+            var source = DataLoaderGenerator.GenerateString(db.Model, typeof(AppDbContext));
+
+            // AccountBalance.AccountId is both its primary key and its foreign key to Account, so
+            // AccountBalance's primary-key loader and Account.Balance's navigation loader resolve to the
+            // same name. HotChocolate emits one class per [DataLoader] method name, so a second copy of
+            // the method makes the generated file uncompilable.
+            Regex.Matches(source, @"> AccountBalanceByAccountId\(").Should().HaveCount(1);
+
+            // The field extension still needs the interface to exist.
+            source.Should().Contain("IAccountBalanceByAccountIdDataLoader");
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public async Task TestEveryLoaderNameIsEmittedOnce()
+    {
+        await AppDbContext.WithSqliteInMemoryAsync(db =>
+        {
+            var source = DataLoaderGenerator.GenerateString(db.Model, typeof(AppDbContext));
+
+            var loaderNames = Regex.Matches(source, @"public static async Task<[^>]*(?:>|>>) (\w+)\(")
+                .Select(m => m.Groups[1].Value)
+                .Where(name => !name.StartsWith("Get", StringComparison.Ordinal))
+                .ToList();
+
+            loaderNames.Should().OnlyHaveUniqueItems();
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public async Task TestNullableReferenceTypeForeignKeyDoesNotUseValue()
+    {
+        await AppDbContext.WithSqliteInMemoryAsync(db =>
+        {
+            var nav = db.GetNavigation<Tenant>(nameof(Tenant.Sites));
+            var config = DataLoader.FromNavigation(db.GetType(), nav);
+
+            config.Nullable.Should().BeTrue();
+
+            // Site.TenantId is string?, which is a nullable reference type. Only Nullable<T> has .Value,
+            // so emitting it here would not compile.
+            config.KeyIsNullableValueType.Should().BeFalse();
+
+            config.Emit(Version).Should().MatchSource(
+                """
+                        [DataLoader]
+                        public static async Task<ILookup<string, Stackworx.EfCoreGraphQL.Tests.Data.Site>> SitesByTenantId(
+                            IReadOnlyList<string> keys,
+                            Stackworx.EfCoreGraphQL.Tests.Data.AppDbContext context,
+                            CancellationToken ct)
+                        {
+                            var items = await context.Set<Stackworx.EfCoreGraphQL.Tests.Data.Site>()
+                                .AsNoTracking()
+                                .Where(e => keys.Contains(e.TenantId!))
+                                .ToListAsync(ct);
+
+                            return items.ToLookup(e => e.TenantId!);
+                        }
+                    """);
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public async Task TestNullableReferenceTypeForeignKeyFieldDoesNotUseValue()
+    {
+        await AppDbContext.WithSqliteInMemoryAsync(db =>
+        {
+            var nav = db.GetNavigation<Site>(nameof(Site.Tenant));
+            var field = FieldExtension.FromNavigation(db.GetType(), nav);
+
+            field.ReferenceFieldNullable.Should().BeTrue();
+            field.ReferenceFieldIsNullableValueType.Should().BeFalse();
+
+            field.Emit().Should().MatchSource(
+                """
+                        public static async Task<Stackworx.EfCoreGraphQL.Tests.Data.Tenant?> GetTenantAsync(
+                            [Parent] Stackworx.EfCoreGraphQL.Tests.Data.Site parent,
+                            ITenantByIdDataLoader loader,
+                            CancellationToken ct)
+                        {
+                            if (parent.TenantId is not null)
+                            {
+                                return await loader.LoadAsync(parent.TenantId, ct);
+                            }
+
+                            return null;
+                        }
+                    """);
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public async Task TestShadowForeignKeyNavigationIsSkipped()
+    {
+        await AppDbContext.WithSqliteInMemoryAsync(db =>
+        {
+            var source = DataLoaderGenerator.GenerateString(db.Model, typeof(AppDbContext));
+
+            // Attachment.Comment is backed by a shadow FK, so no resolver can read the key off the CLR
+            // type. The navigation is skipped rather than overridden with a resolver that throws when
+            // the field is queried.
+            source.Should().NotContain("is a Shadow Property");
+            source.Should().NotContain("GetCommentAsync");
+
+            // Navigations with a real FK property are still generated.
+            source.Should().Contain("GetPostAsync");
 
             return Task.CompletedTask;
         });

@@ -18,6 +18,12 @@ public record FieldExtension
     
     public required bool ReferenceFieldNullable { get; init; }
 
+    /// <summary>
+    /// True when the reference field is a nullable value type (<c>int?</c>), so its value is reached
+    /// through <c>.Value</c>. A nullable reference type (<c>string?</c>) is passed directly.
+    /// </summary>
+    public bool ReferenceFieldIsNullableValueType { get; init; }
+
     public required Type DbContextType { get; init; }
     
     // TODO: Data Loader?
@@ -84,6 +90,7 @@ public record FieldExtension
             NavigationName = nav.Name,
             ReferenceField = prop.Name,
             ReferenceFieldNullable = prop.IsNullable,
+            ReferenceFieldIsNullableValueType = TypeUtils.TryUnwrapNullable(prop.ClrType, out _),
             IsShadowProperty = prop.IsShadowProperty(),
             DbContextType = dbContextClass,
             LoaderName = loaderName,
@@ -140,10 +147,16 @@ public record FieldExtension
 
             if (this.ReferenceFieldNullable)
             {
+                // A nullable value type is unwrapped with .Value; a nullable reference type has no such
+                // member and is passed straight through once the null check has narrowed it.
+                var keyAccess = this.ReferenceFieldIsNullableValueType
+                    ? $"parent.{this.ReferenceField}.Value"
+                    : $"parent.{this.ReferenceField}";
+
                 sb.AppendLine($"        if (parent.{this.ReferenceField} is not null)");
                 sb.AppendLine($"        {{");
                 // TODO: this wont always be appropriate
-                sb.AppendLine($"            return await loader.LoadAsync(parent.{this.ReferenceField}.Value, ct);");
+                sb.AppendLine($"            return await loader.LoadAsync({keyAccess}, ct);");
                 sb.AppendLine($"        }}");
                 sb.AppendLine();
                 sb.AppendLine($"        return null;");
