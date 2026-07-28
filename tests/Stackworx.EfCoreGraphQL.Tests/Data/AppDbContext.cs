@@ -34,6 +34,16 @@ public class AppDbContext : DbContext
 
     public DbSet<Enrollment> Enrollments => this.Set<Enrollment>();
 
+    public DbSet<Attachment> Attachments => this.Set<Attachment>();
+
+    public DbSet<Tenant> Tenants => this.Set<Tenant>();
+
+    public DbSet<Site> Sites => this.Set<Site>();
+
+    public DbSet<Account> Accounts => this.Set<Account>();
+
+    public DbSet<AccountBalance> AccountBalances => this.Set<AccountBalance>();
+
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options)
     {
     }
@@ -154,6 +164,44 @@ public class AppDbContext : DbContext
             b.HasIndex(x => x.PersonId).IsUnique();
         });
 
+        // Optional FK that is a nullable reference type (string?) rather than a Nullable<T>
+        model.Entity<Tenant>(b =>
+        {
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Name).IsRequired();
+            b.HasMany(x => x.Sites)
+                .WithOne(x => x.Tenant)
+                .HasForeignKey(x => x.TenantId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        model.Entity<Site>(b =>
+        {
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Name).IsRequired();
+            b.HasIndex(x => x.TenantId);
+        });
+
+        // 1 : 1 sharing a primary key: AccountBalance.AccountId is both its PK and its FK to Account,
+        // so the primary-key loader and Account.Balance's navigation loader resolve to the same name.
+        model.Entity<Account>(b =>
+        {
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Name).IsRequired();
+            b.HasOne(x => x.Balance)
+                .WithOne(x => x.Account)
+                .HasForeignKey<AccountBalance>(x => x.AccountId)
+                .IsRequired()
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<AccountBalance>(b =>
+        {
+            b.HasKey(x => x.AccountId);
+            b.Property(x => x.Amount).IsRequired();
+        });
+
         // Many : Many (skip navigations)
         model.Entity<Post>(b =>
         {
@@ -169,18 +217,32 @@ public class AppDbContext : DbContext
             b.Property(x => x.Name).IsRequired();
         });
 
-        // Shadow FK variation: Comment → Post without a PostId property
+        // Comment → Post via the declared Comment.PostId property
         model.Entity<Comment>(b =>
         {
             b.HasKey(x => x.Id);
             b.Property(x => x.Text).IsRequired();
-            b.Property<int?>("PostId"); // shadow FK
             b.HasOne(x => x.Post)
                 .WithMany(x => x.Comments)
                 .HasForeignKey("PostId")
                 .IsRequired(false)
                 .OnDelete(DeleteBehavior.Cascade);
             b.HasIndex("PostId");
+        });
+
+        // Genuine shadow FK: Attachment → Comment with no CommentId member on Attachment. WithMany() is
+        // left navigation-less so Comment keeps the navigations the other tests assert against.
+        model.Entity<Attachment>(b =>
+        {
+            b.HasKey(x => x.Id);
+            b.Property(x => x.FileName).IsRequired();
+            b.Property<int?>("CommentId"); // shadow FK
+            b.HasOne(x => x.Comment)
+                .WithMany()
+                .HasForeignKey("CommentId")
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Cascade);
+            b.HasIndex("CommentId");
         });
 
         // Many : Many with payload (explicit join entity)
