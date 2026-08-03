@@ -24,9 +24,23 @@
 
     <ItemGroup>
         <PackageReference Include="FluentAssertions" Version="7.2.0"/>
+        <!-- Identity types cannot be annotated, so they are the filter's reason to exist. -->
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="8.*" Condition="'$(TargetFramework)' == 'net8.0'"/>
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="9.*" Condition="'$(TargetFramework)' == 'net9.0'"/>
+        <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" Version="10.*" Condition="'$(TargetFramework)' == 'net10.0'"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="8.*" Condition="'$(TargetFramework)' == 'net8.0'"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="9.*" Condition="'$(TargetFramework)' == 'net9.0'"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore" Version="10.*" Condition="'$(TargetFramework)' == 'net10.0'"/>
+        <!-- Builds the design-time service provider the sidecar generator is resolved from. -->
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="8.*" Condition="'$(TargetFramework)' == 'net8.0'">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="9.*" Condition="'$(TargetFramework)' == 'net9.0'">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="10.*" Condition="'$(TargetFramework)' == 'net10.0'">
+            <PrivateAssets>all</PrivateAssets>
+        </PackageReference>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="8.*" Condition="'$(TargetFramework)' == 'net8.0'"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="9.*" Condition="'$(TargetFramework)' == 'net9.0'"/>
         <PackageReference Include="Microsoft.EntityFrameworkCore.Sqlite" Version="10.*" Condition="'$(TargetFramework)' == 'net10.0'"/>
@@ -37,6 +51,7 @@
 
     <ItemGroup>
         <ProjectReference Include="..\..\src\Stackworx.EfCoreGraphQL\Stackworx.EfCoreGraphQL.csproj"/>
+        <ProjectReference Include="..\..\src\Stackworx.EFCoreGraphQL.DesignTime\Stackworx.EfCoreGraphQL.DesignTime.csproj"/>
     </ItemGroup>
 
 </Project>

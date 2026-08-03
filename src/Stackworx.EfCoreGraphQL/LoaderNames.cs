@@ -6,13 +6,13 @@ internal static class LoaderNames
 {
     internal static string BatchLoaderName(IEntityType type, IProperty pkProp)
     {
-        return $"{type.ClrType.Name}By{pkProp.Name}";
+        return $"{TypeUtils.GetIdentifierName(type.ClrType)}By{pkProp.Name}";
     }
-    
+
     internal static string GroupLoaderName(IEntityType type, IProperty prop)
     {
         // TODO: is plural a good idea?
-        return $"{type.ClrType.Name}sBy{prop.Name}";
+        return $"{TypeUtils.GetIdentifierName(type.ClrType)}sBy{prop.Name}";
     }
     
     internal static string GroupLoaderName(ISkipNavigation nav)

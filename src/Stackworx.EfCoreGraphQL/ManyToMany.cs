@@ -79,7 +79,7 @@ public record ManyToMany
         sb.AppendLine(
             $"    public static async Task<ILookup<{childKeyType}, {childType}>> {this.LoaderName}(");
         sb.AppendLine($"        IReadOnlyList<{parentKeyType}> keys,");
-        sb.AppendLine($"        {TypeUtils.CsDisplay(this.DbContextType)} context,");
+        sb.AppendLine($"        {TypeUtils.GetNestedQualifiedName(this.DbContextType)} context,");
         sb.AppendLine($"        CancellationToken ct)");
         sb.AppendLine("    {");
         sb.AppendLine($"        var pairs = await context.Set<{childType}>()");

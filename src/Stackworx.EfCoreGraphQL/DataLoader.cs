@@ -157,7 +157,7 @@ public record DataLoader
                 sb.AppendLine(
                     $"    public static async Task<ILookup<{keyType}, {this.EntityType}>> {this.LoaderName}(");
                 sb.AppendLine($"        IReadOnlyList<{keyType}> keys,");
-                sb.AppendLine($"        {TypeUtils.CsDisplay(this.DbContextType)} context,");
+                sb.AppendLine($"        {TypeUtils.GetNestedQualifiedName(this.DbContextType)} context,");
                 sb.AppendLine($"        CancellationToken ct)");
                 sb.AppendLine("    {");
 
@@ -202,7 +202,7 @@ public record DataLoader
                 }
 
                 sb.AppendLine($"        IReadOnlyList<{keyType}> keys,");
-                sb.AppendLine($"        {TypeUtils.CsDisplay(this.DbContextType)} context,");
+                sb.AppendLine($"        {TypeUtils.GetNestedQualifiedName(this.DbContextType)} context,");
                 sb.AppendLine($"        CancellationToken ct)");
                 sb.AppendLine("    {");
                 

@@ -1,7 +1,8 @@
 #!/bin/bash
 set -e
 
-export SIDECAR_OUTPUT_DIR="0$/src/VoucherProvider.Web/Types"
+cd "$(dirname "$0")"
+export STACKWORX_EFCOREGRAPHQL_SIDECAR_OUTPUT_DIR="$PWD/Migrations"
 
 NAME=$1
-dotnet ef migrations add $NAME
+dotnet ef migrations add "$NAME"

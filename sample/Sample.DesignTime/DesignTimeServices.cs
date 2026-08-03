@@ -1,7 +1,6 @@
 namespace Sample.DesignTime;
 
 using Microsoft.EntityFrameworkCore.Design;
-using Microsoft.EntityFrameworkCore.Migrations.Design;
 using Microsoft.Extensions.DependencyInjection;
 using Stackworx.EfCoreGraphQL.DesignTime;
 
@@ -11,6 +10,7 @@ using Stackworx.EfCoreGraphQL.DesignTime;
 /// </summary>
 public sealed class DesignTimeServices : IDesignTimeServices
 {
+    // AddEfCoreGraphQL also takes a GenerateOptions or an Action<GenerateOptions>; see the README.
     public void ConfigureDesignTimeServices(IServiceCollection services)
-        => services.AddSingleton<IMigrationsCodeGenerator, EfCoreMigrationsCodeGenerator>();
+        => services.AddEfCoreGraphQL();
 }
