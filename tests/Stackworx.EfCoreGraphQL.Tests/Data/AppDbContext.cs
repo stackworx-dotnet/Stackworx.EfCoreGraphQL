@@ -125,6 +125,26 @@ public class AppDbContext : DbContext
             b.HasIndex(x => x.AuthorId);
         });
 
+        // Generic entity type: needs a sanitized identifier for names it is emitted *as*, and its type
+        // argument kept for names it is emitted *by*.
+        model.Entity<Revision<Book>>(b =>
+        {
+            b.ToTable("BookRevisions");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Summary).IsRequired();
+            b.HasOne(x => x.Book)
+                .WithMany(x => x.Revisions)
+                .HasForeignKey(x => x.BookId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        model.Entity<Revision<Book>.Note>(b =>
+        {
+            b.ToTable("BookRevisionNotes");
+            b.HasKey(x => x.Id);
+            b.Property(x => x.Text).IsRequired();
+        });
+
         // 1 : 1 (required) via unique FK (not shared PK)
         model.Entity<User>(b =>
         {

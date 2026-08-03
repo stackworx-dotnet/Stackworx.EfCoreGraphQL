@@ -59,6 +59,13 @@ public class GenerateOptionsTests
 
         var unfiltered = DataLoaderGenerator.GenerateString(db.Model, typeof(AuthDbContext));
         unfiltered.Should().Contain("class IdentityRoleExtensions");
+
+        // Identity is where generic entity types show up in practice, so it is also the model that
+        // keeps their naming honest.
+        unfiltered.Should().Contain("class IdentityUserClaimOfStringExtensions");
+        unfiltered.Should().Contain(
+            "[ExtendObjectType<Microsoft.AspNetCore.Identity.IdentityUserClaim<string>>(IgnoreFields = [\"userId\"])]");
+        unfiltered.Should().NotContain("`");
     }
 
     [Fact]

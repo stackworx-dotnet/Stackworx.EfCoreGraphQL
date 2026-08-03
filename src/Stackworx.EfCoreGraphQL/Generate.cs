@@ -299,7 +299,7 @@ public static class DataLoaderGenerator
             sb.AppendLine($"[ExtendObjectType<{entityTypeName}>]");
         }
 
-        sb.AppendLine($"public static class {entity.DisplayName()}Extensions");
+        sb.AppendLine($"public static class {TypeUtils.GetIdentifierName(entity.ClrType)}Extensions");
         sb.AppendLine($"{{");
 
         if (entity.FindPrimaryKey()?.Properties.Count == 1)

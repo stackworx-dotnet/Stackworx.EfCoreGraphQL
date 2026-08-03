@@ -9,4 +9,6 @@ public class Book
     public int AuthorId { get; set; }
 
     public Author Author { get; set; } = null!;
+
+    public List<Revision<Book>> Revisions { get; set; } = [];
 }

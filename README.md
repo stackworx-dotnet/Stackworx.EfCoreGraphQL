@@ -401,3 +401,19 @@ public static class PostExtensions
 A join entity you declare yourself (`Enrollment` with a `Grade`, say) is not a skip navigation: it is two
 one-to-many relationships, and generates as such. The join entity itself is skipped because its primary key
 is composite.
+
+### Generic entity types
+
+A generic entity keeps its type arguments wherever the type is *named*, and takes an identifier-safe form
+wherever a name is *declared*. `Revision<Book>` becomes:
+
+```csharp
+[ExtendObjectType<Revision<Book>>(IgnoreFields = ["bookId"])]
+public static class RevisionOfBookExtensions
+{
+    [DataLoader]
+    public static async Task<IDictionary<int, Revision<Book>>> RevisionOfBookById( /* ... */ )
+```
+
+so the loader interface is `IRevisionOfBookByIdDataLoader`. ASP.NET Core Identity is the usual source of
+these — `IdentityUserClaim<string>` generates as `IdentityUserClaimOfStringExtensions`.

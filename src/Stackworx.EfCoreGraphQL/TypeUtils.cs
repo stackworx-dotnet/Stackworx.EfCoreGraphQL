@@ -6,6 +6,9 @@ using System.Linq;
 
 internal static class TypeUtils
 {
+    /// <summary>
+    /// The type as it is written in C#: <c>Namespace.Outer.Inner&lt;string&gt;</c>.
+    /// </summary>
     public static string GetNestedQualifiedName(Type t)
     {
         var systemType = t switch
@@ -33,18 +36,56 @@ internal static class TypeUtils
             return systemType;
         }
 
-        // Builds: Namespace.Outer.Inner (no '+', strips arity)
-        var parts = new Stack<string>();
-        var cur = t;
-        while (cur is not null)
+        // Builds: Namespace.Outer<TArg>.Inner (no '+', no arity suffix)
+        var typeArguments = t.GetGenericArguments();
+        var consumedArguments = 0;
+        var parts = new List<string>();
+
+        foreach (var level in NestingChain(t))
         {
-            parts.Push(GetNonGenericName(cur));
-            cur = cur.DeclaringType;
+            var part = GetNonGenericName(level);
+
+            // A nested type's generic arguments include its declaring types', so each level owns only
+            // the ones its parents left over.
+            var argumentsUpToLevel = level.IsGenericType ? level.GetGenericArguments().Length : 0;
+            if (argumentsUpToLevel > consumedArguments)
+            {
+                var owned = typeArguments[consumedArguments..argumentsUpToLevel];
+                part += "<" + string.Join(", ", owned.Select(GetNestedQualifiedName)) + ">";
+                consumedArguments = argumentsUpToLevel;
+            }
+
+            parts.Add(part);
         }
 
         var ns = t.Namespace;
         var left = ns is null ? string.Empty : ns + ".";
         return left + string.Join(".", parts);
+    }
+
+    /// <summary>
+    /// The type as a legal C# identifier: <c>Revision&lt;Book&gt;</c> becomes <c>RevisionOfBook</c>.
+    /// </summary>
+    /// <remarks>
+    /// Nesting is dropped, matching <see cref="Type.Name"/>, so two same-named types in different scopes
+    /// produce the same identifier.
+    /// </remarks>
+    public static string GetIdentifierName(Type t)
+        => t.IsGenericType
+            ? GetNonGenericName(t) + "Of" + string.Join("And", t.GetGenericArguments().Select(GetIdentifierName))
+            : GetNonGenericName(t);
+
+    private static IEnumerable<Type> NestingChain(Type t)
+    {
+        var parts = new Stack<Type>();
+        var cur = t;
+        while (cur is not null)
+        {
+            parts.Push(cur);
+            cur = cur.DeclaringType;
+        }
+
+        return parts;
     }
 
     private static string GetNonGenericName(Type t)
@@ -53,19 +94,6 @@ internal static class TypeUtils
         var backtick = name.IndexOf('`');
         return backtick >= 0 ? name[..backtick] : name;
     }
-
-    public static string CsDisplay(Type t)
-        => t.FullName switch
-        {
-            "System.Int32" => "int",
-            "System.Int64" => "long",
-            "System.Guid" => "Guid",
-            "System.String" => "string",
-            "System.Boolean" => "bool",
-            "System.DateTime" => "DateTime",
-            "System.DateTimeOffset" => "DateTimeOffset",
-            _ => t.FullName ?? t.Name
-        };
 
     public static bool TryUnwrapNullable(
         Type type,

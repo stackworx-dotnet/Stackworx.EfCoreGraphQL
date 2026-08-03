@@ -497,7 +497,8 @@ public class Tests
         {
             var source = DataLoaderGenerator.GenerateString(db.Model, typeof(AppDbContext));
 
-            var loaderNames = Regex.Matches(source, @"public static async Task<[^>]*(?:>|>>) (\w+)\(")
+            // Lazy, so a generic return type's nested '>' doesn't hide the loader from this test.
+            var loaderNames = Regex.Matches(source, @"public static async Task<.*?> (\w+)\(")
                 .Select(m => m.Groups[1].Value)
                 .Where(name => !name.StartsWith("Get", StringComparison.Ordinal))
                 .ToList();
@@ -590,6 +591,51 @@ public class Tests
                 new GenerateOptions { IgnoreForeignKeyFields = false });
 
             kept.Should().NotContain("IgnoreFields");
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public async Task TestGenericEntityTypeIsNamedWithLegalIdentifiers()
+    {
+        await AppDbContext.WithSqliteInMemoryAsync(db =>
+        {
+            var source = DataLoaderGenerator.GenerateString(db.Model, typeof(AppDbContext));
+
+            // Revision<Book> is "Revision`1" by reflection and "Revision<Book>" by DisplayName(); neither
+            // can name a class or a method.
+            source.Should().NotContain("`");
+            source.Should().Contain("public static class RevisionOfBookExtensions");
+            source.Should().Contain("> RevisionOfBookById(");
+            source.Should().Contain("> RevisionOfBooksByBookId(");
+
+            // Nested in a generic type, so the type arguments belong to the declaring type.
+            source.Should().Contain("public static class NoteOfBookExtensions");
+            source.Should().Contain("> NoteOfBookById(");
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public async Task TestGenericEntityTypeKeepsItsTypeArguments()
+    {
+        await AppDbContext.WithSqliteInMemoryAsync(db =>
+        {
+            var source = DataLoaderGenerator.GenerateString(db.Model, typeof(AppDbContext));
+
+            // Dropping the type argument binds the attribute to a type that doesn't exist.
+            source.Should().Contain(
+                "[ExtendObjectType<Stackworx.EfCoreGraphQL.Tests.Data.Revision<Stackworx.EfCoreGraphQL.Tests.Data.Book>>(IgnoreFields = [\"bookId\"])]");
+
+            // A nested type's argument sits on the declaring type, not on the nested one.
+            source.Should().Contain(
+                "[ExtendObjectType<Stackworx.EfCoreGraphQL.Tests.Data.Revision<Stackworx.EfCoreGraphQL.Tests.Data.Book>.Note>]");
+
+            // Loaders and field overrides have to name the same constructed type.
+            source.Should().Contain(
+                "context.Set<Stackworx.EfCoreGraphQL.Tests.Data.Revision<Stackworx.EfCoreGraphQL.Tests.Data.Book>>()");
 
             return Task.CompletedTask;
         });
