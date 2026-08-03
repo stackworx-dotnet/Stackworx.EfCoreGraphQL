@@ -91,6 +91,11 @@ Sidecar files are written into `STACKWORX_EFCOREGRAPHQL_SIDECAR_OUTPUT_DIR` with
 
 The sidecar is regenerated when EF scaffolds/updates the model snapshot to avoid stale output when generation-affecting changes don’t influence the EF snapshot text.
 
+One case is deliberately left out. `dotnet ef migrations remove` reverts the snapshot by rebuilding it from
+the previous migration's `BuildTargetModel`, whose model declares entity types by name and so carries no CLR
+types — there is nothing to generate DataLoaders from. The sidecar is left as it was and `dotnet ef` reports
+that it is stale; the next `migrations add` brings it back in sync.
+
 More detail: [`Stackworx.EfCoreGraphQL.DesignTime`](src/Stackworx.EFCoreGraphQL.DesignTime/README.md).
 
 ## Standalone Generation
