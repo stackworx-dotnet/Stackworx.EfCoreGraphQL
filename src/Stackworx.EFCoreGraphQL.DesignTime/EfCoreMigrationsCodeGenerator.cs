@@ -3,27 +3,38 @@ namespace Stackworx.EfCoreGraphQL.DesignTime;
 using System.Text;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Migrations.Design;
+using Microsoft.Extensions.DependencyInjection;
 using Stackworx.EfCoreGraphQL;
 
-public class EfCoreMigrationsCodeGenerator(
-    MigrationsCodeGeneratorDependencies dependencies,
-    CSharpMigrationsGeneratorDependencies csharpDependencies)
-    : CSharpMigrationsGenerator(dependencies, csharpDependencies)
+public class EfCoreMigrationsCodeGenerator : CSharpMigrationsGenerator
 {
     // The generator runs during design-time migration scaffolding.
     // When startup project != target project, CWD is often not the migrations project.
     // To avoid writing files into the wrong repo folder, we require an explicit output directory.
     private const string SidecarOutputDirEnvVar = "STACKWORX_EFCOREGRAPHQL_SIDECAR_OUTPUT_DIR";
 
+    private readonly GenerateOptions options;
+
+    public EfCoreMigrationsCodeGenerator(
+        MigrationsCodeGeneratorDependencies dependencies,
+        CSharpMigrationsGeneratorDependencies csharpDependencies,
+        IServiceProvider serviceProvider)
+        : base(dependencies, csharpDependencies)
+    {
+        // Registered by AddEfCoreGraphQL. Absent when the generator is registered by itself, which keeps
+        // the documented bare AddSingleton<IMigrationsCodeGenerator, ...> registration working.
+        this.options = serviceProvider.GetService<GenerateOptions>() ?? new GenerateOptions();
+    }
+
     public override string GenerateSnapshot(string? modelSnapshotNamespace, Type contextType, string modelSnapshotName,
         IModel model)
     {
         var snapshotCode = base.GenerateSnapshot(modelSnapshotNamespace, contextType, modelSnapshotName, model);
-        TryGenerateSidecar(modelSnapshotNamespace, modelSnapshotName, model, contextType);
+        this.TryGenerateSidecar(modelSnapshotNamespace, modelSnapshotName, model, contextType);
         return snapshotCode;
     }
 
-    private static void TryGenerateSidecar(
+    private void TryGenerateSidecar(
         string? modelSnapshotNamespace,
         string modelSnapshotName,
         IModel model,
@@ -39,21 +50,21 @@ public class EfCoreMigrationsCodeGenerator(
         var outputDir = ResolveRequiredOutputDir();
         var sidecarPath = Path.Combine(outputDir, sidecarFileName);
 
-        var @namespace = string.IsNullOrWhiteSpace(modelSnapshotNamespace)
-            ? "Generated.DataLoaders"
-            : modelSnapshotNamespace + ".Generated.DataLoaders";
-
         var content = DataLoaderGenerator.GenerateString(
             model,
             contextType,
-            new GenerateOptions
+            new GenerateOptions(this.options)
             {
-                Namespace = @namespace,
-                // Keep defaults for Mode/Filter; consumers can later add configurability.
+                Namespace = this.options.Namespace ?? DeriveNamespace(modelSnapshotNamespace),
             });
 
         AtomicWrite(sidecarPath, content);
     }
+
+    private static string DeriveNamespace(string? modelSnapshotNamespace)
+        => string.IsNullOrWhiteSpace(modelSnapshotNamespace)
+            ? GenerateOptions.DefaultNamespace
+            : modelSnapshotNamespace + "." + GenerateOptions.DefaultNamespace;
 
     private static string ResolveRequiredOutputDir()
     {
