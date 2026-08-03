@@ -97,3 +97,8 @@ dotnet ef migrations add InitialCreate \
 
 The sidecar is rewritten on every snapshot generation, so changes that don't affect the snapshot text
 (e.g. adding `[EFCoreGraphQLIgnore]`) still take effect.
+
+`dotnet ef migrations remove` is the exception. It reverts the snapshot by rebuilding it from the previous
+migration's `BuildTargetModel`, whose model declares entity types by name and so carries no CLR types —
+nothing that DataLoaders can be generated from. The sidecar is left untouched and `dotnet ef` reports that
+it is now stale; the next `migrations add` brings it back in sync.
