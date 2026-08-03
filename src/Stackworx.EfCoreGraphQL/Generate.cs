@@ -110,22 +110,9 @@ public static class DataLoaderGenerator
         // names are tracked across the whole run to keep each one emitted exactly once.
         var emittedLoaders = new Dictionary<string, string>(StringComparer.Ordinal);
 
-        foreach (var entity in model.GetEntityTypes()
-                     .Where(e => !e.IsOwned())
-                     .OrderBy(e => e.Name))
+        foreach (var entity in model.GetEntityTypes().OrderBy(e => e.Name))
         {
-            if (entity.ShouldIgnore())
-            {
-                continue;
-            }
-
-            if (mode == Mode.OptIn && !entity.ShouldInclude())
-            {
-                continue;
-            }
-
-            // Allow user to manually exclude specific entities
-            if (filter is not null && filter(entity))
+            if (!GenerationPolicy.GeneratesFor(entity, mode, filter))
             {
                 continue;
             }
@@ -270,18 +257,6 @@ public static class DataLoaderGenerator
         Dictionary<string, string> emittedLoaders,
         bool ignoreForeignKeyFields)
     {
-        // Skip join tables
-        var pk = entity.FindPrimaryKey();
-        if (pk is null)
-        {
-            return;
-        }
-
-        if (pk.Properties.Count > 1)
-        {
-            return;
-        }
-
         sb.AppendLine($"// {entity.DisplayName()}");
 
         var ignoreFields = ignoreForeignKeyFields
@@ -302,23 +277,18 @@ public static class DataLoaderGenerator
         sb.AppendLine($"public static class {TypeUtils.GetIdentifierName(entity.ClrType)}Extensions");
         sb.AppendLine($"{{");
 
-        if (entity.FindPrimaryKey()?.Properties.Count == 1)
-        {
-            var dataLoader = DataLoader.FromEntity(dbContextClass, entity);
-            AppendLoader(sb, emittedLoaders, dataLoader.LoaderName, dataLoader.EmitComment(), dataLoader.Emit(version));
-        }
+        var primaryKeyLoader = DataLoader.FromEntity(dbContextClass, entity);
+        AppendLoader(
+            sb,
+            emittedLoaders,
+            primaryKeyLoader.LoaderName,
+            primaryKeyLoader.EmitComment(),
+            primaryKeyLoader.Emit(version));
 
-        foreach (var navigation in entity.GetNavigations()
-                     .Where(n => !n.IsEagerLoaded && !n.TargetEntityType.IsOwned())
-                     .OrderBy(n => n.Name))
+        foreach (var navigation in entity.GetNavigations().OrderBy(n => n.Name))
         {
             // TODO: warning about composite keys
-            if (navigation.ForeignKey.Properties.Count > 1)
-            {
-                continue;
-            }
-
-            if (navigation.HasGraphQLIgnore())
+            if (!GenerationPolicy.GeneratesFor(navigation))
             {
                 continue;
             }
@@ -330,15 +300,6 @@ public static class DataLoaderGenerator
 
             var field = FieldExtension.FromNavigation(dbContextClass, navigation);
 
-            // A shadow foreign key has no CLR property to read, so neither the loader nor the field
-            // override can be written against it. Skip the navigation and leave HotChocolate's default
-            // resolution in place: emitting an override that throws turns any query for the field into
-            // an error, which is worse than not overriding it at all.
-            if (field.IsShadowProperty || dataLoader?.IsShadowProperty == true)
-            {
-                continue;
-            }
-
             if (dataLoader is not null)
             {
                 AppendLoader(sb, emittedLoaders, dataLoader.LoaderName, dataLoader.EmitComment(), dataLoader.Emit(version));
@@ -348,57 +309,17 @@ public static class DataLoaderGenerator
             sb.AppendLine(field.Emit());
         }
 
-        foreach (var navigation in entity.GetSkipNavigations()
-                     .Where(n => !n.IsEagerLoaded)
-                     .OrderBy(n => n.Name))
+        foreach (var navigation in entity.GetSkipNavigations().OrderBy(n => n.Name))
         {
-            if (navigation.HasGraphQLIgnore())
+            if (!GenerationPolicy.GeneratesFor(navigation))
             {
                 continue;
             }
 
-            // We can only generate a correct many-to-many data loader when the skip navigation has a CLR-backed inverse
-            // (either a property or a field). Without an inverse member, EF can still model the relationship, but we
-            // can't reliably:
-            //  - project the "parent" key from the join, and
-            //  - select/shape the "child" collection for lookup,
-            // because our emission code uses the inverse member name to build the SelectMany() expression.
-            //
-            // Example:
-            //   class Post { public int Id { get; set; } public ICollection<Tag> Tags { get; set; } }
-            //   class Tag  { public int Id { get; set; } public ICollection<Post> Posts { get; set; } }
-            //
-            // The generated loader needs the inverse navigation (Tag.Posts) to map parent ids to children:
-            //   [DataLoader]
-            //   public static async Task<ILookup<int, Tag>> TagsByPosts(
-            //       IReadOnlyList<int> keys,
-            //       AppDbContext context,
-            //       CancellationToken ct)
-            //   {
-            //       var pairs = await context.Set<Tag>()
-            //           .Where(t => t.Posts.Any(p => keys.Contains(p.Id)))
-            //           .SelectMany(tag => tag.Posts.Select(post => new { post.Id, Child = tag }))
-            //           .AsNoTracking()
-            //           .ToListAsync(ct);
-            //
-            //       return pairs.ToLookup(e => e.Id, x => x.Child);
-            //   }
-            //
-            // If the inverse doesn't exist, we skip emitting this loader/field extension to avoid generating code that
-            // won't compile or will behave incorrectly.
-            if (navigation.Inverse.FieldInfo is null && navigation.Inverse.PropertyInfo is null)
-            {
-                continue;
-            }
-            
-            // Skip dependant navigations
-            if (!navigation.IsOnDependent)
-            {
-                // TODO: emit extension
-                var manyToMany = ManyToMany.FromNavigation(dbContextClass, navigation);
-                AppendLoader(sb, emittedLoaders, manyToMany.LoaderName, string.Empty, manyToMany.EmitDataLoader());
-                sb.AppendLine(manyToMany.EmitFieldExtension());
-            }
+            // TODO: emit extension
+            var manyToMany = ManyToMany.FromNavigation(dbContextClass, navigation);
+            AppendLoader(sb, emittedLoaders, manyToMany.LoaderName, string.Empty, manyToMany.EmitDataLoader());
+            sb.AppendLine(manyToMany.EmitFieldExtension());
         }
 
         sb.AppendLine($"}}");

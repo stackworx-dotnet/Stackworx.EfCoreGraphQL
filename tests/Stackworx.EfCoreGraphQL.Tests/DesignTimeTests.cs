@@ -101,6 +101,94 @@ public class DesignTimeTests
         });
     }
 
+    /// <summary>
+    /// The generate-only route has to produce the file the migrations hook would have produced, or moving
+    /// between the two churns the sidecar.
+    /// </summary>
+    [Fact]
+    public async Task TestGenerateOnlyMatchesScaffoldingOutput()
+    {
+        await AppDbContext.WithSqliteInMemoryAsync(db =>
+        {
+            var options = new GenerateOptions { Mode = Mode.OptIn };
+
+            var scaffolded = GenerateSidecar(db, services => services.AddEfCoreGraphQL(options));
+            var generateOnly = GenerateOnly(options);
+
+            generateOnly.Should().Be(scaffolded);
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public void TestGenerateOnlyReadsOptionsFromDesignTimeServices()
+    {
+        // The fixture's IDesignTimeServices configures Mode.OptIn, so options stay declared in the one
+        // place the scaffolding route already reads them from.
+        var source = GenerateOnly(options: null);
+
+        source.Should().Contain("class AuthorExtensions");
+        source.Should().NotContain("class UserExtensions");
+        source.Should().Contain($"namespace {SnapshotNamespace}.{GenerateOptions.DefaultNamespace};");
+    }
+
+    [Fact]
+    public void TestGenerateOnlyReportsWhetherOutputChanged()
+    {
+        var outputDir = Directory.CreateTempSubdirectory("efcoregraphql-generate-only");
+
+        try
+        {
+            var first = SidecarGenerator.Generate(typeof(DesignTimeTests).Assembly, outputDir.FullName);
+            first.Should().ContainSingle().Which.Changed.Should().BeTrue();
+
+            var second = SidecarGenerator.Generate(typeof(DesignTimeTests).Assembly, outputDir.FullName);
+            second.Should().ContainSingle().Which.Changed.Should().BeFalse();
+
+            second[0].Path.Should().Be(Path.Combine(outputDir.FullName, "AppDbContextModelSnapshot.DataLoaders.g.cs"));
+            second[0].ContextType.Should().Be(typeof(AppDbContext));
+        }
+        finally
+        {
+            outputDir.Delete(recursive: true);
+        }
+    }
+
+    [Fact]
+    public void TestGenerateOnlyRequiresAnOutputDirectory()
+    {
+        var previous = Environment.GetEnvironmentVariable(OutputDirEnvVar);
+        Environment.SetEnvironmentVariable(OutputDirEnvVar, null);
+
+        try
+        {
+            var generate = () => SidecarGenerator.Generate(typeof(DesignTimeTests).Assembly);
+
+            generate.Should().Throw<InvalidOperationException>().WithMessage($"*{OutputDirEnvVar}*");
+        }
+        finally
+        {
+            Environment.SetEnvironmentVariable(OutputDirEnvVar, previous);
+        }
+    }
+
+    private static string GenerateOnly(GenerateOptions? options)
+    {
+        var outputDir = Directory.CreateTempSubdirectory("efcoregraphql-generate-only");
+
+        try
+        {
+            var results = SidecarGenerator.Generate(typeof(DesignTimeTests).Assembly, outputDir.FullName, options);
+
+            return File.ReadAllText(results.Should().ContainSingle().Subject.Path);
+        }
+        finally
+        {
+            outputDir.Delete(recursive: true);
+        }
+    }
+
     private static string GenerateSidecar(AppDbContext db, Action<IServiceCollection> configure)
     {
         var outputDir = Directory.CreateTempSubdirectory("efcoregraphql-designtime");

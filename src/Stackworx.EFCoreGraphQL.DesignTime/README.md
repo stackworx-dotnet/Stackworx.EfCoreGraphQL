@@ -28,9 +28,13 @@ public sealed class DesignTimeServices : IDesignTimeServices
 
 `AddEfCoreGraphQL` takes a `GenerateOptions`, or an `Action<GenerateOptions>`:
 
+The symbols live in four different namespaces:
+
 ```csharp
-using Stackworx.EfCoreGraphQL;
-using Stackworx.EfCoreGraphQL.Abstractions;
+using Microsoft.Extensions.DependencyInjection;    // IServiceCollection
+using Stackworx.EfCoreGraphQL;                     // EntityTypeFilters, GenerateOptions
+using Stackworx.EfCoreGraphQL.Abstractions;        // Mode, EFCoreGraphQLIncludeAttribute
+using Stackworx.EfCoreGraphQL.DesignTime;          // AddEfCoreGraphQL
 
 public void ConfigureDesignTimeServices(IServiceCollection services)
     => services.AddEfCoreGraphQL(options =>
@@ -72,6 +76,11 @@ options.IgnoreForeignKeyFields = false;
 public class Author { /* ... */ }
 ```
 
+Adopting into a schema that already hides fields by hand has one trap worth reading before you start: a
+pre-existing `ExtendObjectType(IgnoreFields = [...])` can delete a generated field with no warning and no
+schema diff. See [A pre-existing `IgnoreFields` can silently delete a generated
+field](https://github.com/stackworx-dotnet/Stackworx.EfCoreGraphQL#a-pre-existing-ignorefields-can-silently-delete-a-generated-field).
+
 ## 4) Set the output directory (required)
 
 During scaffolding EF Core's working directory is often **not** the migrations project, so the output
@@ -97,3 +106,33 @@ dotnet ef migrations add InitialCreate \
 
 The sidecar is rewritten on every snapshot generation, so changes that don't affect the snapshot text
 (e.g. adding `[EFCoreGraphQLIgnore]`) still take effect.
+
+## 6) Regenerate without a migration
+
+An annotation-only change doesn't move the EF model, so scaffolding a migration to pick it up produces one
+with an empty `Up`/`Down`. `SidecarGenerator` writes the same file without touching migration history:
+
+```csharp
+using Stackworx.EfCoreGraphQL.DesignTime;
+
+if (args.Contains("--generate-dataloaders"))
+{
+    foreach (var result in SidecarGenerator.Generate(typeof(Program).Assembly))
+    {
+        Console.WriteLine($"{(result.Changed ? "updated" : "unchanged")} {result.Path}");
+    }
+
+    return;
+}
+```
+
+```zsh
+dotnet run --project ./src/Your.Api.Project -- --generate-dataloaders
+```
+
+It reads the output name and namespace from the `ModelSnapshot`, the model from your
+`IDesignTimeDbContextFactory<TContext>`, and the options from your `IDesignTimeServices` — so nothing is
+configured twice, and both routes write identical bytes. `Changed` is the up-to-date check for CI.
+
+Full detail, including the caveats:
+[Regenerate without a migration](https://github.com/stackworx-dotnet/Stackworx.EfCoreGraphQL#6-regenerate-without-a-migration).

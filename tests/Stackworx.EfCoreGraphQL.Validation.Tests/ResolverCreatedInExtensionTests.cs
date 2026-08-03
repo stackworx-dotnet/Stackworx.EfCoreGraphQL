@@ -71,7 +71,7 @@ public class ResolverCreatedInExtensionTests
             .Select(e => new
             {
                 EntityName = e.EntityType.ClrType.Name,
-                FieldName = e.Field.Name,
+                e.FieldName,
                 e.Message,
                 ObjectName = e.ObjectType.Name,
             });

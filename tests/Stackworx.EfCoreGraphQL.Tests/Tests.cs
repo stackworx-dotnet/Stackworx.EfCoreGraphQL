@@ -641,6 +641,94 @@ public class Tests
         });
     }
 
+    /// <summary>
+    /// The generator emits one extension class per entity, so a navigation it resolves is never listed in
+    /// the <c>IgnoreFields</c> of the class resolving it.
+    /// </summary>
+    /// <remarks>
+    /// A second <c>ExtendObjectType</c> class on the same entity — a hand-written one, in another
+    /// namespace — can still drop the field, because HotChocolate applies <c>IgnoreFields</c> per merge and
+    /// the last merge wins. That is HotChocolate's behaviour, not something the generated text can prevent;
+    /// it is reproduced and detected in
+    /// <c>Stackworx.EfCoreGraphQL.Validation.Tests.SuppressedFieldTests</c>.
+    /// </remarks>
+    [Fact]
+    public async Task TestNoExtensionIgnoresAFieldItResolves()
+    {
+        await AppDbContext.WithSqliteInMemoryAsync(db =>
+        {
+            var source = DataLoaderGenerator.GenerateString(db.Model, typeof(AppDbContext));
+
+            foreach (var extension in ParseExtensions(source))
+            {
+                extension.IgnoreFields.Should().NotIntersectWith(
+                    extension.ResolvedFields,
+                    $"{extension.ClassName} resolves those fields");
+            }
+
+            return Task.CompletedTask;
+        });
+    }
+
+    [Fact]
+    public async Task TestOneExtensionClassPerEntity()
+    {
+        await AppDbContext.WithSqliteInMemoryAsync(db =>
+        {
+            var source = DataLoaderGenerator.GenerateString(db.Model, typeof(AppDbContext));
+
+            var extensions = ParseExtensions(source).ToList();
+
+            // Every class has to be parsed, or the invariant above passes over what it missed.
+            extensions.Should().HaveCount(Regex.Matches(source, @"\[ExtendObjectType<").Count);
+            extensions.Should().Contain(e => e.IgnoreFields.Count > 0);
+            extensions.Should().Contain(e => e.ResolvedFields.Count > 0);
+
+            extensions.Select(e => e.ExtendedType).Should().OnlyHaveUniqueItems();
+            extensions.Select(e => e.ClassName).Should().OnlyHaveUniqueItems();
+
+            return Task.CompletedTask;
+        });
+    }
+
+    private record GeneratedExtension(
+        string ExtendedType,
+        string ClassName,
+        IReadOnlyList<string> IgnoreFields,
+        IReadOnlyList<string> ResolvedFields);
+
+    /// <summary>
+    /// Splits the generated source into its <c>ExtendObjectType</c> classes, pairing each class's
+    /// <c>IgnoreFields</c> with the GraphQL field names its resolvers contribute.
+    /// </summary>
+    private static IEnumerable<GeneratedExtension> ParseExtensions(string source)
+    {
+        // A class body ends at the first unindented '}', so the lazy match stops there rather than at a
+        // method's closing brace.
+        var classes = Regex.Matches(
+            source,
+            @"\[ExtendObjectType<(?<type>.+?)>(\(IgnoreFields = \[(?<ignore>.*?)\]\))?\]\s*public static class (?<class>\w+)\s*\{(?<body>.*?)\n\}",
+            RegexOptions.Singleline);
+
+        foreach (var match in classes.Cast<Match>())
+        {
+            var ignoreFields = Regex.Matches(match.Groups["ignore"].Value, "\"(?<name>[^\"]+)\"")
+                .Select(m => m.Groups["name"].Value)
+                .ToList();
+
+            // A resolver named Get{Nav}Async contributes the field {nav}; a [DataLoader] method does not.
+            var resolvedFields = Regex.Matches(match.Groups["body"].Value, @"public static async Task<.*?> Get(?<nav>\w+)Async\(")
+                .Select(m => char.ToLowerInvariant(m.Groups["nav"].Value[0]) + m.Groups["nav"].Value[1..])
+                .ToList();
+
+            yield return new GeneratedExtension(
+                match.Groups["type"].Value,
+                match.Groups["class"].Value,
+                ignoreFields,
+                resolvedFields);
+        }
+    }
+
     [Fact]
     public async Task TestShadowForeignKeyNavigationIsSkipped()
     {
