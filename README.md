@@ -1,4 +1,12 @@
-# Read Me
+# Stackworx.EfCoreGraphQL
+
+[![CI](https://github.com/stackworx-dotnet/Stackworx.EfCoreGraphQL/actions/workflows/dotnet.yml/badge.svg)](https://github.com/stackworx-dotnet/Stackworx.EfCoreGraphQL/actions/workflows/dotnet.yml)
+[![NuGet](https://img.shields.io/nuget/v/Stackworx.EfCoreGraphQL.svg?label=Stackworx.EfCoreGraphQL)](https://www.nuget.org/packages/Stackworx.EfCoreGraphQL)
+[![NuGet](https://img.shields.io/nuget/v/Stackworx.EfCoreGraphQL.DesignTime.svg?label=.DesignTime)](https://www.nuget.org/packages/Stackworx.EfCoreGraphQL.DesignTime)
+[![NuGet](https://img.shields.io/nuget/v/Stackworx.EfCoreGraphQL.Validation.svg?label=.Validation)](https://www.nuget.org/packages/Stackworx.EfCoreGraphQL.Validation)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+![.NET](https://img.shields.io/badge/.NET-net8.0%20%7C%20net9.0%20%7C%20net10.0-512BD4?logo=dotnet&logoColor=white)
+![C#](https://img.shields.io/badge/C%23-Language-239120?logo=csharp&logoColor=white)
 
 ## DesignTime Integration
 
